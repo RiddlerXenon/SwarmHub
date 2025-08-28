@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Stochastic Diffusion Search (SDS)</title>
+  <link rel="stylesheet" href="../static/css/styles.css">
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div class="controls" id="controls"></div>
+
+  <script type="module">
+    import { initSDS } from "../static/js/sds.js";
+
+    const canvas = document.getElementById("canvas");
+    const controlsContainer = document.getElementById("controls");
+    
+    const { params, createControls } = initSDS(canvas, {
+      N: 50,
+      func: 'twopeaks',
+      sigma: 0.1,
+      stepsPerFrame: 1,
+      restartProb: 0.1,
+      showHeatmap: true,
+      showTraj: false,
+      showBest: true,
+      anneal: false
+    });
+
+    // Создаем панель управления
+    createControls(controlsContainer);
+  </script>
+</body>
+</html>

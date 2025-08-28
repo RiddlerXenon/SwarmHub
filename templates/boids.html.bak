@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Boids Simulation</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #111; color: #eee; font-family: sans-serif; }
+    canvas { display: block; }
+    .controls {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.7);
+      padding: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      text-align: center;
+      gap: 10px;
+      justify-content: center;
+    }
+    .controls label { font-size: 12px; margin-right: 5px; }
+    .controls input[type=range] { width: 100px; }
+    button {
+      padding: 5px 10px;
+      background: #222;
+      border: 1px solid #555;
+      color: #eee;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .control {
+      display: flex;
+      align-items: center;   
+      text-align: center;
+      gap: 5px;             
+    }
+    .control span {
+      /*display: inline-flex;*/
+      min-width: 2em; /* фиксированная ширина чисел */
+    }
+    button.active { background: #0a0; }
+  </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<div class="controls">
+    <label for="boidCount">Boids:<br>
+        <div class="control">
+            <span id="boidCountVal">150</span>
+            <input type="range" id="boidCount" min="20" max="500" value="150">
+        </div>
+    </label>
+
+    <label for="speed">Speed:<br>
+        <div class="control">
+            <span id="speedVal">2.5</span>
+            <input type="range" id="speed" min="1.0" max="6.0" step="0.1" value="2.5">
+        </div>
+    </label>
+
+    <label for="align">Align:<br>
+        <div class="control">
+            <span id="alignVal">1.0</span>
+            <input type="range" id="align" min="0.0" max="2.0" step="0.1" value="1.0">
+        </div>
+    </label>
+
+    <label for="cohesion">Cohesion:<br>
+        <div class="control">
+            <span id="cohesionVal">0.8</span>
+            <input type="range" id="cohesion" min="0.0" max="2.0" step="0.1" value="0.8">
+        </div>
+    </label>
+
+    <label for="separation">Separation:<br>
+        <div class="control">
+            <span id="separationVal">1.2</span>
+            <input type="range" id="separation" min="0.0" max="3.0" step="0.1" value="1.2">
+        </div>
+    </label>
+    <button id="traceBtn">Трассировка OFF</button>
+</div>
+
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// ====== ВЕКТОРНЫЕ ФУНКЦИИ ======
+function add(v1, v2) { return { x: v1.x + v2.x, y: v1.y + v2.y }; }
+function sub(v1, v2) { return { x: v1.x - v2.x, y: v1.y - v2.y }; }
+function mult(v, n) { return { x: v.x * n, y: v.y * n }; }
+function div(v, n) { return { x: v.x / n, y: v.y / n }; }
+function mag(v) { return Math.sqrt(v.x * v.x + v.y * v.y); }
+function normalize(v) { let m = mag(v); return m === 0 ? {x:0,y:0} : { x: v.x/m, y: v.y/m }; }
+function setMag(v, n) { return mult(normalize(v), n); }
+function limit(v, max) { return mag(v) > max ? setMag(v, max) : v; }
+
+// ====== ПАРАМЕТРЫ ======
+let params = {
+  maxSpeed: 2.5,
+  alignWeight: 1.0,
+  cohesionWeight: 0.8,
+  separationWeight: 1.2,
+  boidCount: 150,
+  tracing: false
+};
+
+// ====== КЛАСС BOID ======
+class Boid {
+  constructor() {
+    this.position = { x: Math.random() * canvas.width, y: Math.random() * canvas.height };
+    this.velocity = { x: Math.random() * 2 - 1, y: Math.random() * 2 - 1 };
+    this.acceleration = { x: 0, y: 0 };
+    this.maxForce = 0.05;
+    this.radius = 6; // фиксированный радиус
+    this.history = []; 
+    this.maxTrail = 40; 
+  }
+
+  edges() {
+    if (this.position.x < 0) { this.position.x = 0; this.velocity.x *= -1; }
+    if (this.position.x > canvas.width) { this.position.x = canvas.width; this.velocity.x *= -1; }
+    if (this.position.y < 0) { this.position.y = 0; this.velocity.y *= -1; }
+    if (this.position.y > canvas.height) { this.position.y = canvas.height; this.velocity.y *= -1; }
+  }
+
+  align(boids) {
+    let perception = 60;
+    let steering = {x:0, y:0};
+    let total = 0;
+    for (let other of boids) {
+      let d = mag(sub(this.position, other.position));
+      if (other !== this && d < perception) {
+        steering = add(steering, other.velocity);
+        total++;
+      }
+    }
+    if (total > 0) {
+      steering = div(steering, total);
+      steering = setMag(steering, params.maxSpeed);
+      steering = sub(steering, this.velocity);
+      steering = limit(steering, this.maxForce);
+    }
+    return steering;
+  }
+
+  cohesion(boids) {
+    let perception = 60;
+    let steering = {x:0, y:0};
+    let total = 0;
+    for (let other of boids) {
+      let d = mag(sub(this.position, other.position));
+      if (other !== this && d < perception) {
+        steering = add(steering, other.position);
+        total++;
+      }
+    }
+    if (total > 0) {
+      steering = div(steering, total);
+      steering = sub(steering, this.position);
+      steering = setMag(steering, params.maxSpeed);
+      steering = sub(steering, this.velocity);
+      steering = limit(steering, this.maxForce);
+    }
+    return steering;
+  }
+
+  separation(boids) {
+    let perception = 30;
+    let steering = {x:0, y:0};
+    let total = 0;
+    for (let other of boids) {
+      let d = mag(sub(this.position, other.position));
+      if (other !== this && d < perception) {
+        let diff = sub(this.position, other.position);
+        diff = div(diff, d); 
+        steering = add(steering, diff);
+        total++;
+      }
+    }
+    if (total > 0) {
+      steering = div(steering, total);
+      steering = setMag(steering, params.maxSpeed);
+      steering = sub(steering, this.velocity);
+      steering = limit(steering, this.maxForce);
+    }
+    return steering;
+  }
+
+  flock(boids) {
+    let alignment = this.align(boids);
+    let cohesion = this.cohesion(boids);
+    let separation = this.separation(boids);
+
+    this.acceleration = add(this.acceleration, mult(alignment, params.alignWeight));
+    this.acceleration = add(this.acceleration, mult(cohesion, params.cohesionWeight));
+    this.acceleration = add(this.acceleration, mult(separation, params.separationWeight));
+  }
+
+  update() {
+    this.position = add(this.position, this.velocity);
+    this.velocity = add(this.velocity, this.acceleration);
+    this.velocity = limit(this.velocity, params.maxSpeed);
+    this.acceleration = mult(this.acceleration, 0);
+
+    // след
+    this.history.push({x: this.position.x, y: this.position.y});
+    if (this.history.length > this.maxTrail) this.history.shift();
+  }
+
+  getTrailColor() {
+    let speed = mag(this.velocity);
+    let t = speed / params.maxSpeed; // нормализация [0..1]
+    let r = Math.floor(255 * t);
+    let g = Math.floor(255 * (1 - Math.abs(t - 0.5) * 2)); 
+    let b = Math.floor(255 * (1 - t));
+    return `rgba(${r},${g},${b},0.4)`;
+  }
+
+  draw() {
+    if (params.tracing && this.history.length > 1) {
+      ctx.beginPath();
+      ctx.moveTo(this.history[0].x, this.history[0].y);
+      for (let p of this.history) ctx.lineTo(p.x, p.y);
+      ctx.strokeStyle = this.getTrailColor();
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    let angle = Math.atan2(this.velocity.y, this.velocity.x);
+    ctx.save();
+    ctx.translate(this.position.x, this.position.y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(this.radius*2, 0);
+    ctx.lineTo(-this.radius, this.radius);
+    ctx.lineTo(-this.radius, -this.radius);
+    ctx.closePath();
+    ctx.fillStyle = "white";
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ====== ИНИЦИАЛИЗАЦИЯ ======
+let boids = Array.from({ length: params.boidCount }, () => new Boid());
+
+function updateBoidCount(n) {
+  params.boidCount = n;
+  boids = Array.from({ length: n }, () => new Boid());
+}
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let boid of boids) {
+    boid.edges();
+    boid.flock(boids);
+    boid.update();
+    boid.draw();
+  }
+
+  requestAnimationFrame(animate);
+}
+animate();
+
+// ====== UI ======
+function bindSlider(id, key, isInt=false) {
+  const slider = document.getElementById(id);
+  const label = document.getElementById(id + "Val");
+  slider.addEventListener("input", () => {
+    params[key] = isInt ? parseInt(slider.value) : parseFloat(slider.value);
+    label.textContent = slider.value;
+    if (key === "boidCount") updateBoidCount(params.boidCount);
+  });
+}
+bindSlider("boidCount", "boidCount", true);
+bindSlider("speed", "maxSpeed");
+bindSlider("align", "alignWeight");
+bindSlider("cohesion", "cohesionWeight");
+bindSlider("separation", "separationWeight");
+
+// Кнопка трассировки
+const traceBtn = document.getElementById("traceBtn");
+traceBtn.addEventListener("click", () => {
+  params.tracing = !params.tracing;
+  traceBtn.textContent = params.tracing ? "Трассировка ON" : "Трассировка OFF";
+  traceBtn.classList.toggle("active", params.tracing);
+});
+</script>
+</body>
+</html>
+

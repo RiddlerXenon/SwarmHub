@@ -1,0 +1,107 @@
+body { 
+  margin: 0; 
+  background: #111; 
+  overflow-x: hidden;  /* чтобы горизонтального скролла не было */
+  overflow-y: auto;
+  color: #eee; 
+  font-family: sans-serif; 
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  max-width: 1000px;
+  margin: auto;
+}
+
+.card {
+  display: flex;
+  background: #111;
+  border-radius: 12px;
+  border: 2px solid #333;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s;
+  height: 350px;
+}
+.card:hover {
+  transform: scale(1.02);
+}
+
+.card canvas {
+  width: 66.6%;
+  height: 100%;
+  display: block;
+  background: #111;
+}
+.card .desc {
+  width: 33.3%;
+  padding: 20px;
+  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: #222;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.overlay.active {
+  display: flex;
+}
+.modal {
+  position: relative;
+  width: 90%;
+  height: 90%;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.modal iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 10px;
+  background: #222;
+  color: #eee;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  z-index: 1001;
+}
+.close-btn:hover {
+  background: #444;
+}
+
+canvas { 
+  width: 100vw; 
+  height: 100vh; 
+  display: block; 
+}
+
+.card canvas {
+  width: 66.6%;
+  height: 100%;
+}
+
+.controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}

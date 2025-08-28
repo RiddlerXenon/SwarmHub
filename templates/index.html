@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Главная страница</title>
+  <link rel="stylesheet" href="../static/css/styles.css">
+  <style>
+    .card canvas {
+      transition: opacity 0.3s ease;
+    }
+    
+    .card:hover canvas {
+      opacity: 1;
+    }
+    
+    .card canvas:not(:hover) {
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Карточка 1 с превью -->
+    <div class="card">
+      <canvas id="previewBoids" onclick="openModal('./boids.html')"></canvas>
+      <div class="desc" onclick="openModal('./boids_description.html')">Boids Simulation</div>
+    </div>
+
+    <!-- Карточка 2 -->
+    <div class="card">
+      <canvas id="previewAnts" onclick="openModal('./ants.html')"></canvas>
+      <div class="desc">Ant Colony Optimization</div>
+    </div>
+
+    <!-- Карточка 3 -->
+    <div class="card">
+      <canvas id="previewSDS" onclick="openModal('./sds.html')"></canvas>
+      <div class="desc">Stochastic Diffusion Search</div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <button class="close-btn" onclick="closeModal()">✕</button>
+      <iframe id="modalFrame" src=""></iframe>
+    </div>
+  </div>
+
+  <script>
+    function openModal(page) {
+      const overlay = document.getElementById("overlay");
+      const frame = document.getElementById("modalFrame");
+
+      overlay.classList.add("active");
+
+      frame.onload = () => {
+        const w = frame.contentWindow;
+        if (!w) return;
+
+        // Для ants.html (если есть глобальная функция)
+        if (page.includes("ants.html") && typeof w.newGraph === "function") {
+          w.newGraph();
+        }
+
+        // Для других страниц ничего не вызываем, если нет нужной функции.
+        // (boids.html сам себя инициализирует, либо ты можешь аналогично вызвать здесь свою функцию)
+      };
+
+      frame.src = page;
+    }
+
+    function closeModal() {
+      document.getElementById("modalFrame").src = "";
+      document.getElementById("overlay").classList.remove("active");
+    }
+  </script>
+
+  <script type="module">
+    import { initBoids } from "../static/js/boids.js";
+    import { initAnts } from "../static/js/ants.js";
+    import { initSDS } from "../static/js/sds.js";
+
+    // Ждем загрузки DOM
+    document.addEventListener('DOMContentLoaded', () => {
+      // Превью для boids - сначала отрисовываем статичную картинку, затем анимация по наведению
+      const previewCanvas = document.getElementById("previewBoids");
+      let boidsInstance = null;
+      let isAnimating = false;
+
+      // Проверяем что canvas готов
+      if (previewCanvas && previewCanvas.getContext) {
+        // Инициализируем превью в режиме паузы с отрисованным состоянием
+        boidsInstance = initBoids(previewCanvas, { 
+          boidCount: 20, 
+          boidSize: 3, 
+          separationWeight: 3, 
+          separationDist: 70, 
+          maxSpeed: 6, 
+          fov: 360,
+          isPreview: true,
+          startPaused: true  // Новый параметр - начинать в паузе, но с отрисованной картинкой
+        });
+
+        // Дополнительная попытка отрисовки через requestAnimationFrame
+        requestAnimationFrame(() => {
+          if (boidsInstance && boidsInstance.drawStaticFrame) {
+            boidsInstance.drawStaticFrame();
+          }
+        });
+
+        // При наведении - запускаем анимацию
+        previewCanvas.addEventListener('mouseenter', () => {
+          if (boidsInstance && !isAnimating) {
+            isAnimating = true;
+            boidsInstance.startAnimation();
+          }
+        });
+
+        // При уходе курсора - останавливаем анимацию через некоторое время
+        previewCanvas.addEventListener('mouseleave', () => {
+          if (boidsInstance && isAnimating) {
+            setTimeout(() => {
+              if (boidsInstance) {
+                boidsInstance.pauseAnimation();
+                isAnimating = false;
+              }
+            }, 1000); // Анимация продолжается еще секунду после ухода курсора
+          }
+        });
+      }
+
+      // Превью для ants (статичный граф без анимации)
+      const previewAnts = document.getElementById("previewAnts");
+      if (previewAnts) {
+        initAnts(previewAnts, { 
+          nodeCount: 8, 
+          alpha: 1.0, 
+          beta: 2.0, 
+          rho: 0.3, 
+          autoRun: false 
+        });
+      }
+
+      // Превью для SDS (статичная визуализация)
+      const previewSDS = document.getElementById("previewSDS");
+      if (previewSDS) {
+        initSDS(previewSDS, { 
+          N: 30, 
+          func: 'twopeaks', 
+          showHeatmap: true, 
+          showTraj: false, 
+          showBest: true,
+          heatGrid: 16
+        });
+      }
+    });
+  </script>
+</body>
+</html>
