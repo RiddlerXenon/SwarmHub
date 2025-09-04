@@ -4,131 +4,19 @@
   <meta charset="UTF-8">
   <title>Boids Demo</title>
   <link rel="stylesheet" href="../static/css/styles.css">
-  <style>
-    #controlPanel {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      background: rgba(0, 0, 0, 0.9);
-      color: white;
-      border-radius: 10px;
-      font-family: Arial, sans-serif;
-      font-size: 14px;
-      max-width: 300px;
-      transition: all 0.3s ease;
-      z-index: 1000;
-      padding: 0;
-    }
-
-    #controlPanel.collapsed {
-      width: 50px;
-      height: 50px;
-      border-radius: 25px;
-      padding: 0;
-    }
-
-    #controlPanel:not(.collapsed) {
-      padding: 15px;
-    }
-
-    #toggleBtn {
-      background: #444;
-      border: none;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      padding: 8px 12px;
-      margin-bottom: 10px;
-    }
-
-    #controlPanel.collapsed #toggleBtn {
-      width: 50px;
-      height: 50px;
-      border-radius: 25px;
-      margin: 0;
-      font-size: 20px;
-      padding: 0;
-    }
-
-    #toggleBtn:hover {
-      background: #555;
-    }
-
-    #mainControls {
-      display: block;
-    }
-
-    #controlPanel.collapsed #mainControls {
-      display: none !important;
-    }
-
-    .control-group {
-      margin-bottom: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .control-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .button-group {
-      display: flex;
-      gap: 5px;
-      flex-wrap: wrap;
-    }
-
-    .control-row label {
-      min-width: 80px;
-      font-size: 12px;
-    }
-
-    .control-row input[type="range"] {
-      flex: 1;
-      min-width: 100px;
-    }
-
-    .control-row button, .button-group button {
-      background: #333;
-      border: 1px solid #555;
-      color: white;
-      padding: 5px 10px;
-      border-radius: 3px;
-      cursor: pointer;
-      font-size: 11px;
-    }
-
-    .control-row button:hover, .button-group button:hover {
-      background: #444;
-    }
-
-    .control-row button.active, .button-group button.active {
-      background: #0066cc;
-    }
-
-    #advancedControls {
-      display: none;
-    }
-
-    #advancedControls.show {
-      display: block;
-    }
-
-    .value-display {
-      min-width: 40px;
-      text-align: center;
-      font-size: 11px;
-      color: #ccc;
-    }
-  </style>
+  <!-- Подключаем MathJax для рендеринга LaTeX -->
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      chtml: {
+        scale: 0.9
+      }
+    };
+  </script>
 </head>
 <body>
   <canvas id="canvas"></canvas>
@@ -140,27 +28,27 @@
       <!-- Кнопки управления -->
       <div class="control-group">
         <div class="button-group">
-          <button id="pauseBtn">Play</button>
-          <button id="wallsBtn" class="active">Стены</button>
-          <button id="fovBtn">FOV</button>
-          <button id="tracingBtn">Trace</button>
+          <button id="pauseBtn">Pause</button>
+          <button id="wallsBtn" class="active">Walls OFF</button>
+          <button id="fovBtn">FOV ON</button>
+          <button id="tracingBtn" class="tooltip-label" data-tooltip="tracing">Trace ON</button>
         </div>
       </div>
 
       <!-- Основные параметры -->
       <div class="control-group">
         <div class="control-row">
-          <label>dt:</label>
+          <label class="tooltip-label" data-tooltip="dt">Шаг интегрирования $\Delta t$</label>
           <input type="range" id="dt" min="0.1" max="2.0" step="0.1" value="1.0">
           <span class="value-display" id="dtVal">1.0</span>
         </div>
         <div class="control-row">
-          <label>Boids:</label>
+          <label class="tooltip-label" data-tooltip="boidCount">Число агентов $N$</label>
           <input type="range" id="boidCount" min="20" max="200" value="100">
           <span class="value-display" id="boidCountVal">100</span>
         </div>
         <div class="control-row">
-          <label>φ (deg):</label>
+          <label class="tooltip-label" data-tooltip="fovDeg">Угол поля восприятия $\phi$</label>
           <input type="range" id="phi" min="45" max="360" step="1" value="135">
           <span class="value-display" id="phiVal">135°</span>
         </div>
@@ -169,113 +57,114 @@
       <!-- Веса -->
       <div class="control-group">
         <div class="control-row">
-          <label>w_match:</label>
+          <label class="tooltip-label" data-tooltip="w_match">Выравнивание $w_{\mathrm{match}}$</label>
           <input type="range" id="wmatch" min="0.0" max="2.0" step="0.1" value="1.0">
           <span class="value-display" id="wmatchVal">1.0</span>
         </div>
         <div class="control-row">
-          <label>w_center:</label>
+          <label class="tooltip-label" data-tooltip="w_center">Центрирование $w_{\mathrm{match}}$</label>
           <input type="range" id="wcenter" min="0.0" max="2.0" step="0.1" value="0.8">
           <span class="value-display" id="wcenterVal">0.8</span>
         </div>
         <div class="control-row">
-          <label>w_sep:</label>
+          <label class="tooltip-label" data-tooltip="w_sep">Разделение $w_{\mathrm{sep}}$</label>
           <input type="range" id="wsep" min="0.0" max="3.0" step="0.1" value="1.2">
           <span class="value-display" id="wsepVal">1.2</span>
         </div>
       </div>
 
       <!-- Кнопка расширенных настроек -->
-      <div class="control-group">
-        <button id="advancedBtn">Расширенные</button>
+      <div id="advancedCG" class="control-group">
+        <button id="advancedBtn">Расширенные настройки</button>
       </div>
 
       <!-- Расширенные настройки -->
       <div id="advancedControls">
         <div class="control-row">
-          <label>Соседство:</label>
-          <select id="neighborMode" style="color: black;">
-            <option value="metric" selected>metric</option>
-            <option value="topo">topo</option>
-          </select>
+          <label class="tooltip-label" data-tooltip="neighborMode">Схема соседства</label>
+          <button id="neighborBtn">metric</button>
+        </div>
+
+        <div id="k_topo">
+          <div class="control-row">
+            <label class="tooltip-label" data-tooltip="kTopo">Число топологических соседей $k$</label>
+            <input type="range" id="kTopo" min="1" max="50" step="1" value="7">
+            <span class="value-display" id="kTopoVal">7</span>
+          </div>
         </div>
 
         <div class="control-row">
-          <label>k (topo):</label>
-          <input type="range" id="kTopo" min="1" max="50" step="1" value="7">
-          <span class="value-display" id="kTopoVal">7</span>
-        </div>
-
-        <div class="control-row">
-          <label>r:</label>
+          <label class="tooltip-label" data-tooltip="r">Радиус восприятия $r$</label>
           <input type="range" id="r" min="20" max="150" step="1" value="60">
           <span class="value-display" id="rVal">60</span>
         </div>
 
         <div class="control-row">
-          <label>r_sep:</label>
+          <label class="tooltip-label" data-tooltip="r_sep">Радиус ближней зоны $a_{\mathrm{sep}}$</label>
           <input type="range" id="rsep" min="10" max="100" step="1" value="30">
           <span class="value-display" id="rsepVal">30</span>
         </div>
 
         <div class="control-row">
-          <label>v_pref:</label>
+          <label class="tooltip-label" data-tooltip="v_pref">Предпочтительная скорость $v_{pref}$</label>
           <input type="range" id="vpref" min="0.1" max="6.0" step="0.1" value="1.5">
           <span class="value-display" id="vprefVal">1.50</span>
         </div>
 
         <div class="control-row">
-          <label>v_max:</label>
+          <label class="tooltip-label" data-tooltip="v_max">Ограничение скорости $v_{max}$</label>
           <input type="range" id="vmax" min="1.0" max="6.0" step="0.1" value="2.5">
           <span class="value-display" id="vmaxVal">2.5</span>
         </div>
 
         <div class="control-row">
-          <label>a_max:</label>
+          <label class="tooltip-label" data-tooltip="a_max">Ограничение ускорения $a_{max}$</label>
           <input type="range" id="amax" min="0.01" max="0.2" step="0.005" value="0.05">
           <span class="value-display" id="amaxVal">0.05</span>
         </div>
 
         <div class="control-row">
-          <label>τ_match:</label>
+          <label class="tooltip-label" data-tooltip="tauMatch">Постоянная выравнивания $\tau_{\mathrm{match}}$</label>
           <input type="range" id="taumatch" min="0.1" max="5.0" step="0.1" value="1.0">
           <span class="value-display" id="taumatchVal">1.00</span>
         </div>
 
         <div class="control-row">
-          <label>τ_center:</label>
+          <label class="tooltip-label" data-tooltip="tauCenter">Постоянная центрирования $\tau_{\mathrm{center}}$</label>
           <input type="range" id="taucenter" min="0.1" max="5.0" step="0.1" value="1.2">
           <span class="value-display" id="taucenterVal">1.20</span>
         </div>
 
         <div class="control-row">
-          <label>τ_sep:</label>
+          <label class="tooltip-label" data-tooltip="tauSep">Постоянная разделения $\tau_{\mathrm{sep}}$</label>
           <input type="range" id="tausep" min="0.1" max="5.0" step="0.1" value="0.6">
           <span class="value-display" id="tausepVal">0.60</span>
         </div>
 
         <div class="control-row">
-          <label>k_sep:</label>
+          <label class="tooltip-label" data-tooltip="k_sep">Интенсивность разделения $k_{\mathrm{sep}}$</label>
           <input type="range" id="ksep" min="0.0" max="5.0" step="0.1" value="1.0">
           <span class="value-display" id="ksepVal">1.00</span>
         </div>
 
         <div class="control-row">
-          <label>Сопротивление:</label>
-          <select id="dampMode" style="color: black;">
-            <option value="off" selected>off</option>
-            <option value="accel">accel</option>
-          </select>
+          <label class="tooltip-label" data-tooltip="dampMode" style="font-size: 10">Режим вязкости среды</label>
+          <button id="dampBtn">off</button>
         </div>
 
-        <div class="control-row">
-          <label>γ:</label>
-          <input type="range" id="gamma" min="0.0" max="0.5" step="0.01" value="0.0">
-          <span class="value-display" id="gammaVal">0.0</span>
+        <div id="damp">
+          <div class="control-row">
+            <label class="tooltip-label" data-tooltip="gamma">Коэффициент вязкости $\gamma$</label>
+            <input type="range" id="gamma" min="0.0" max="0.5" step="0.01" value="0.0">
+            <span class="value-display" id="gammaVal">0.0</span>
+          </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Всплывающие подсказки -->
+  <div id="tooltip" class="tooltip"></div>
 
   <script type="module">
     import { initBoids } from "../static/js/boids.js";

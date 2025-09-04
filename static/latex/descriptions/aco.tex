@@ -1,0 +1,86 @@
+\documentclass{article}
+
+% Language setting
+% Replace `english' with e.g. `spanish' to change the document language
+\usepackage[russian]{babel}
+
+% Set page size and margins
+% Replace `letterpaper' with `a4paper' for UK/EU standard size
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+% Useful packages
+\usepackage{graphicx}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\usepackage{amsmath,amssymb,mathtools,bm,dsfont}
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+
+\newcommand{\1}{\mathds{1}}
+
+\begin{document}
+
+Алгоритм муравьиной колонии формализуется как стохастическая метаэвристика комбинаторной оптимизации на неориентированном (ориентированном) взвешенном графе (орграфе) $G=(V,E, w)$, где $V = \{v_1, v_2, \ldots, v_n\}$ представляет множество вершин, $E \subseteq \left\{ \left\{u, v \right\} \mid u, v \in V, u \neq v  \right\}$ - множество неупорядоченных пар $\left\{u, v \right\}$ (ребер) ($E \subseteq \left\{ \left(u, v \right) \mid u, v \in V, u \neq v \right\}$ - множество упорядоченных пар $(u, v)$ (дуг)), с метрическими или предметно-специфическими весами ребер (дуг) $w_{ij} :=w(e)$, где $w: E \rightarrow \left(0, \infty \right)$, и двумя информационными полями: феромонным $\tau_{ij}(t)\ge 0$, определяемым только для $(i,j) \in E$, и эвристическим $\eta_{ij}>0$ (допустимы динамические реализации), которое задает априорную привлекательность перехода [1, 2]. Наличие петель или параллельных ребер в графе $G$ является допустимым теоретически, но в приводимой авторами реализации не рассматривается. Каждое решение порождается популяцией из $m$ агентов, которые последовательно расширяют допустимую частичную траекторию, выбирая следующий переход по вероятностному правилу предпочтений, сочетающему накопленный опыт колонии (через $\tau$) с априорной локальной «желательностью» (через $\eta$). При реализации одного шага муравей $k$, находясь в вершине $i$, выбирает допустимую вершину $j \in N_i^k$ с вероятностью
+\begin{equation}
+    p_{ij}^k(t)=\frac{\left[\tau_{ij}(t)\right]^{\alpha}\left[\eta_{ij}\right]^{\beta}}{\sum_{l\in N_i^k}\left[\tau_{il}(t)\right]^{\alpha}\left[\eta_{il}\right]^{\beta}},
+\end{equation}
+где $N_i^k \neq \varnothing $ — множество допустимых переходов; $\alpha, \beta \ge 0$ — коэффициенты, определяющие относительное влияние опыта $\tau$ и эвристики $\eta$ соответственно. При $\alpha=0$ $\left( \beta=0 \right)$ потенциал выбора вырождается в стохастическую схему по $\eta$ $\left( \tau \right)$. Для задачи коммивояжера естественно полагать $\eta_{ij}=\frac{1}{w_{ij}}$. В иных постановках $\eta$ задаётся предметно-специфично (отношение «ценность/вес», приоритеты операций и т. п.). Следы феромона инициализируются $\tau_{ij}(0)=\tau_0>0$ и в дальнейшем эволюционируют под влиянием эффектов испарения и подкрепления. Данная динамика феромонов на ребре $(i, j)$ задается рекуррентно
+\begin{equation}
+    \tau_{ij}(t+1)=(1-\rho)\tau_{ij}(t)+\sum_{k=1}^{m}\Delta\tau_{ij}^{k}(t) = \tau_{ij}^{(1)}(t+1) + \tau_{ij}^{(2)}(t+1),\qquad \rho\in(0,1],
+\end{equation}
+где $\rho$ — коэффициент испарения, подавляющий неограниченное накопление и обеспечивающий «забывание». Формально, уравнение (2) можно разбить на два основных этапа: испарение феромов согласно компоненте 
+\begin{equation}
+    \tau_{ij}^{(1)}(t+1) := (1-\rho) \tau_{ij}(t), \qquad \rho \in (0,1],
+\end{equation}
+моделирующей естественное испарение в природе и предотвращающей их неограниченное накопление на одних и тех же путях, и добавление новых феромонов пропорционально качеству найденных решений
+\begin{equation}
+    \tau_{ij}^{(2)}(t+1) := \sum_{k=1}^m \Delta\tau_{ij}^k(t).
+\end{equation}
+Таким образом реализуется стигмергия: коллективная память кодируется в среде и направляет последующие выборы [1]. Для неориентированного графа принимается $\tau_{ij} = \tau_{ji}$. Вклад муравья $k$ определяется на основе качества полученного решения
+\begin{equation}
+    \Delta \tau_{ij}^{k}(t)=
+    \begin{cases}
+    \dfrac{Q}{L_k(t)}, & \left\{i,j\right\} \in S_k,\\
+    0;
+    \end{cases}
+\end{equation}
+где $S_k$ — множество ребер (дуг $(i, j) \in S_k$), использованных в решении муравья $k$ на итерации $t$; $L_k(t)$ — длина или же стоимость решения, найденного агентом; $Q>0$ — константа, определяющая общую интенсивность подкрепления (откладываемых феромонов). Обратная зависимость от длины пути обеспечивает, что более оптимальные (короткие) пути получают больше феромонов. Общий вид алгоритмов приведен ниже.
+
+\begin{algorithm}[H]
+\caption{Муравьиная колония на графе $G=(V,E,w)$}
+\KwIn{$\alpha,\beta\ge 0$;\ $\rho\in(0,1]$;\ $Q>0$;\ $m,T\in\mathbb{N}$;\ $\tau_0>0$}
+\KwOut{$(S_\star,L_\star)$}
+\textbf{Init:}\quad $\tau_{\{i,j\}}(0)\gets \tau_{0} \ \ \forall \{i,j\}\in E$; $(S_\star,L_\star)\gets(\varnothing,+\infty)$.
+
+\For{$t=0,1,\dots,T-1$}{
+  \For{$k=1,2,\dots,m$}{
+    выбрать старт $i\in V$; $S_k(t)\gets\varnothing$;\\
+    \While{конструкция решения не завершена}{
+      задать $N_i^k\neq\varnothing$; выбрать $j\in N_i^k$ по распределению $p_{ij}^k(t)$ из (1);\\
+      $S_k(t)\gets S_k(t)\cup\{\{i,j\}\}$; $i\gets j$.
+    }
+    вычислить $L_k(t)>0$.
+  }
+
+  \tcp{Испарение (3)}
+  \ForEach{$\{i,j\}\in E$}{ $\tau_{\{i,j\}}^{(1)}(t+1)\gets (1-\rho)\,\tau_{\{i,j\}}(t)$ }
+
+  \tcp{Подкрепление (4)–(5)}
+  \ForEach{$\{i,j\}\in E$}{
+    $\tau_{\{i,j\}}^{(2)}(t+1)\gets \displaystyle\sum_{k=1}^m \Delta\tau_{\{i,j\}}^k(t)$,\quad
+    $\Delta\tau_{\{i,j\}}^k(t)=\begin{cases}\dfrac{Q}{L_k(t)}, & \{i,j\}\in S_k,\\[4pt] 0,& \text{иначе.}\end{cases}$
+  }
+
+  \tcp{Полная динамика (2)}
+  \ForEach{$\{i,j\}\in E$}{ $\tau_{\{i,j\}}(t+1)\gets \tau_{\{i,j\}}^{(1)}(t+1)+\tau_{\{i,j\}}^{(2)}(t+1)$ }
+
+  выбрать $k_{t}\in\arg\min_{k} L_k(t)$; если $L_{k_{t}}(t)<L_\star$: $(S_\star,L_\star)\gets\bigl(S_{k_t}(t),L_{k_t}(t)\bigr)$.
+}
+\KwRet{$(S_\star,L_\star)$}
+\end{algorithm}
+
+1. Dorigo, Marco & Maniezzo, Vittorio & Colorni, Alberto. (1996). Ant System: Optimization by a colony of cooperating agents. IEEE Trans Syst Man Cybernetics - Part B. IEEE transactions on systems, man, and cybernetics. Part B, Cybernetics : a publication of the IEEE Systems, Man, and Cybernetics Society. 26. 29-41. 10.1109/3477.484436. 
+
+2. Dorigo, Marco & Birattari, Mauro & Stützle, Thomas. (2006). Ant Colony Optimization. Computational Intelligence Magazine, IEEE. 1. 28-39. 10.1109/MCI.2006.329691.
+
+
+\end{document}

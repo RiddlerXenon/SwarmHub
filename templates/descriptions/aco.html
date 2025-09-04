@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Алгоритм муравьиной колонии</title>
+    
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                tags: 'ams',
+                tagSide: 'right',
+                processEscapes: true,
+                processEnvironments: true
+            },
+            svg: {
+                fontCache: 'global'
+            },
+            startup: {
+                ready: () => {
+                    console.log('MathJax готов');
+                    MathJax.startup.defaultReady();
+                    MathJax.startup.promise.then(() => {
+                        showContent();
+                    });
+                }
+            }
+        };
+    </script>
+    
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    
+    <style>
+        body {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: white;
+            background-color: #111;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        
+        .equation {
+            margin: 20px 0;
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .algorithm {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #444;
+            background-color: #1a1a1a;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            border-radius: 5px;
+        }
+        
+        .algorithm-title {
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #fff;
+            font-family: 'Times New Roman', Times, serif;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        .algorithm-input, .algorithm-output, .algorithm-init {
+            margin: 10px 0;
+            padding: 8px 0;
+            color: #ccc;
+            border-bottom: 1px solid #333;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        
+        .algorithm-for, .algorithm-while, .algorithm-foreach, .algorithm-return {
+            margin: 5px 0;
+            color: #fff;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+        
+        .algorithm-line {
+            margin: 3px 0;
+            color: #ddd;
+            line-height: 1.4;
+        }
+        
+        .algorithm-comment {
+            margin: 3px 0;
+            color: #888;
+            font-style: italic;
+            line-height: 1.4;
+        }
+        
+        .algorithm mjx-container {
+			font-family: 'Times New Roman', Times, serif !important;
+			font-size: 1em !important;
+			color: #fff !important;
+		}
+		.algorithm-math {
+			display: inline-block;
+			margin: 2px 0;
+		}
+		.algorithm-math div {
+			text-align: center;
+		}
+
+        .algorithm mjx-container[display="true"] {
+            display: block !important;
+            margin: 0.5em 0 !important;
+            text-align: left !important;
+        }
+        
+        .algorithm mjx-container svg {
+            vertical-align: baseline !important;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        p {
+            text-align: justify;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 50px;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #666;
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+		.references {
+			border-top: none;   /* убираем верхнюю линию у блока */
+			border-bottom: none; /* убираем нижнюю */
+			margin-top: 0.5em;
+		}
+
+		.references ol {
+			margin: 0;
+			padding-left: 20px;
+		}
+
+		hr {
+			border: none;
+			border-top: 1px solid #444; /* более мягкий серый */
+			margin: 1em 0;
+		}
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+        Загрузка математических формул...
+    </div>
+    
+    <div id="content" style="display: none;">
+        <h1>Алгоритм муравьиной колонии</h1>
+        <p>Алгоритм муравьиной колонии формализуется как стохастическая метаэвристика комбинаторной оптимизации на неориентированном (ориентированном) взвешенном графе (орграфе) $G=(V,E, w)$, где $V = \{v_1, v_2, \ldots, v_n\}$ представляет множество вершин, $E \subseteq \left\{ \left\{u, v \right\} \mid u, v \in V, u \neq v  \right\}$ - множество неупорядоченных пар $\left\{u, v \right\}$ (ребер) ($E \subseteq \left\{ \left(u, v \right) \mid u, v \in V, u \neq v \right\}$ - множество упорядоченных пар $(u, v)$ (дуг)), с метрическими или предметно-специфическими весами ребер (дуг) $w_{ij} :=w(e)$, где $w: E \rightarrow \left(0, \infty \right)$, и двумя информационными полями: феромонным $\tau_{ij}(t)\ge 0$, определяемым только для $(i,j) \in E$, и эвристическим $\eta_{ij}>0$ (допустимы динамические реализации), которое задает априорную привлекательность перехода [1, 2]. Наличие петель или параллельных ребер в графе $G$ является допустимым теоретически, но в приводимой авторами реализации не рассматривается. Каждое решение порождается популяцией из $m$ агентов, которые последовательно расширяют допустимую частичную траекторию, выбирая следующий переход по вероятностному правилу предпочтений, сочетающему накопленный опыт колонии (через $\tau$) с априорной локальной «желательностью» (через $\eta$). При реализации одного шага муравей $k$, находясь в вершине $i$, выбирает допустимую вершину $j \in N_i^k$ с вероятностью</p>
+<div class="equation">$$p_{ij}^k(t)=\frac{\left[\tau_{ij}(t)\right]^{\alpha}\left[\eta_{ij}\right]^{\beta}}{\sum_{l\in {i}^k}\left[\tau_{il}(t)\right]^{\alpha}\left[\eta_{il}\right]^{\beta}}, \tag{1}$$</div>
+<p>где $N_i^k \neq \varnothing $ — множество допустимых переходов; $\alpha, \beta \ge 0$ — коэффициенты, определяющие относительное влияние опыта $\tau$ и эвристики $\eta$ соответственно. При $\alpha=0$ $\left( \beta=0 \right)$ потенциал выбора вырождается в стохастическую схему по $\eta$ $\left( \tau \right)$. Для задачи коммивояжера естественно полагать $\eta_{ij}=\frac{1}{w_{ij}}$. В иных постановках $\eta$ задаётся предметно-специфично (отношение «ценность/вес», приоритеты операций и т. п.). Следы феромона инициализируются $\tau_{ij}(0)=\tau_0>0$ и в дальнейшем эволюционируют под влиянием эффектов испарения и подкрепления. Данная динамика феромонов на ребре $(i, j)$ задается рекуррентно</p>
+<div class="equation">$$\tau_{ij}(t+1)=(1-\rho)\tau_{ij}(t)+\sum_{k=1}^{m}\Delta\tau_{ij}^{k}(t) = \tau_{ij}^{(1)}(t+1) + \tau_{ij}^{(2)}(t+1),\qquad \rho\in(0,1], \tag{2}$$</div>
+<p>где $\rho$ — коэффициент испарения, подавляющий неограниченное накопление и обеспечивающий «забывание». Формально, уравнение (2) можно разбить на два основных этапа: испарение феромов согласно компоненте</p>
+<div class="equation">$$\tau_{ij}^{(1)}(t+1) := (1-\rho) \tau_{ij}(t), \qquad \rho \in (0,1], \tag{3}$$</div>
+<p>моделирующей естественное испарение в природе и предотвращающей их неограниченное накопление на одних и тех же путях, и добавление новых феромонов пропорционально качеству найденных решений</p>
+<div class="equation">$$\tau_{ij}^{(2)}(t+1) := \sum_{k=1}^m \Delta\tau_{ij}^k(t). \tag{4}$$</div>
+<p>Таким образом реализуется стигмергия: коллективная память кодируется в среде и направляет последующие выборы [1]. Для неориентированного графа принимается $\tau_{ij} = \tau_{ji}$. Вклад муравья $k$ определяется на основе качества полученного решения</p>
+<div class="equation">$$\Delta \tau_{ij}^{k}(t)= \begin{cases}\dfrac{Q}{{k}(t)}, \{i,j\} \in {k}, \\ 0;\end{cases} \tag{5}$$</div>
+<p>где $S_k$ — множество ребер (дуг $(i, j) \in S_k$), использованных в решении муравья $k$ на итерации $t$; $L_k(t)$ — длина или же стоимость решения, найденного агентом; $Q>0$ — константа, определяющая общую интенсивность подкрепления (откладываемых феромонов). Обратная зависимость от длины пути обеспечивает, что более оптимальные (короткие) пути получают больше феромонов. Общий вид алгоритмов приведен ниже.</p>
+<div class="algorithm">
+<div class="algorithm-title">Алгоритм: Муравьиная колония на графе $G=(V,E,w)$</div>
+<div class="algorithm-input"><strong>Вход:</strong> $\alpha,\beta\ge 0$;\ $\rho\in(0,1]$;\ $Q>0$;\ $m,T\in\mathbb{N</div>
+<div class="algorithm-output"><strong>Выход:</strong> $(S_\star,L_\star)$</div>
+<div class="algorithm-init"><strong>Инициализация:</strong> $\tau_{\{i,j\}}(0)\leftarrow \tau_{0} \ \ \forall \{i,j\}\in E$; $(S_\star,L_\star)\leftarrow(\emptyset,+\infty)$.</div>
+<div class="algorithm-for"><strong>для</strong> $t=0,1,\dots,T-1$ <strong>делать</strong></div>
+<div class="algorithm-for">&nbsp;&nbsp;&nbsp;&nbsp;<strong>для</strong> $k=1,2,\dots,m$ <strong>делать</strong></div>
+<div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;выбрать старт <span class="algorithm-math">$i\in V$</span>; <span class="algorithm-math">${k}(t)\leftarrow\emptyset$</span>; <br></div>
+<div class="algorithm-while">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>пока</strong> конструкция решения не завершена <strong>делать</strong></div>
+<div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;задать <span class="algorithm-math">${i}^k\neq\emptyset$</span>; выбрать <span class="algorithm-math">$j\in {i}^k$</span> по распределению <span class="algorithm-math">$p_{ij}^k(t)$</span> из (1); <br></div>
+<div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="algorithm-math">${k}(t)\leftarrow {k}(t)\cup\{\{i,j\}\}$</span>; <span class="algorithm-math">$i\leftarrow j$</span>.</div>
+<div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;вычислить <span class="algorithm-math">${k}(t)>0$</span>.</div>
+<div class="algorithm-comment">&nbsp;&nbsp;&nbsp;&nbsp;// Испарение (3)</div>
+<div class="algorithm-comment">&nbsp;&nbsp;&nbsp;&nbsp;// Подкрепление (4)–(5)</div>
+<div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="algorithm-math">$\tau_{\{i,j\}}^{(2)}(t+1)\leftarrow \sum_{k=1}^m \Delta\tau_{\{i,j\}}^k(t)$</span>,</div>
+<div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="algorithm-math">$\Delta\tau_{\{i,j\}}^k(t)=\begin{cases}\dfrac{Q}{{k}(t)}, \{i,j\}\in {k},<br>[4pt] 0, иначе.\end{cases}$</span></div>
+<div class="algorithm-comment">// Полная динамика (2)</div>
+<div class="algorithm-line">выбрать <span class="algorithm-math">$k_{t}\in\arg\min_{k} {k}(t)$</span>; если <span class="algorithm-math">$L_{k_{t}}(t)<L_\star$</span>: <span class="algorithm-math">$(S_\star,L_\star)\leftarrow\bigl(S_{{t}}(t),L_{{t}}(t)\bigr)$</span>.</div>
+<div class="algorithm-return"><strong>вернуть</strong> $(S_\star,L_\star)$</div>
+</div>
+        
+<hr>
+<div class="references">
+  <ol><li>Dorigo, Marco & Maniezzo, Vittorio & Colorni, Alberto. (1996). Ant System: Optimization by a colony of cooperating agents. IEEE Trans Syst Man Cybernetics - Part B. IEEE transactions on systems, man, and cybernetics. Part B, Cybernetics : a publication of the IEEE Systems, Man, and Cybernetics Society. 26. 29-41. 10.1109/3477.484436.</li><li>Dorigo, Marco & Birattari, Mauro & Stützle, Thomas. (2006). Ant Colony Optimization. Computational Intelligence Magazine, IEEE. 1. 28-39. 10.1109/MCI.2006.329691.</li></ol>
+</div>
+    </div>
+
+    <script>
+        function showContent() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+            console.log('Контент отображен');
+        }
+
+        function waitForMathJax() {
+            if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+                window.MathJax.startup.promise.then(() => {
+                    console.log('MathJax загружен');
+                    showContent();
+                }).catch((err) => {
+                    console.log('Ошибка MathJax:', err);
+                    showContent();
+                });
+            } else {
+                setTimeout(waitForMathJax, 100);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                if (document.getElementById('loading').style.display !== 'none') {
+                    showContent();
+                }
+            }, 5000);
+            
+            waitForMathJax();
+        });
+    </script>
+</body>
+</html>

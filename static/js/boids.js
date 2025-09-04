@@ -26,6 +26,9 @@ export function initBoids(canvas, options = {}) {
   let animationId = null;
   let isAnimationRunning = false;
 
+  // Предрендеренные LaTeX формулы
+  let tooltipElements = {};
+
   // Параметры
   const params = {
     // кинематика
@@ -45,7 +48,7 @@ export function initBoids(canvas, options = {}) {
     k_sep: options.k_sep ?? 1.0,
 
     // демпфирование (только ускорительное A_damp = -gamma * V)
-    dampMode: options.dampMode ?? 'off',   // 'off' | 'accel'
+    dampMode: options.dampMode ?? false,   // 'off' | 'accel'
     gamma: options.gamma ?? 0.0,           // с^-1 в дискретизации через dt
 
     // восприятие
@@ -55,7 +58,8 @@ export function initBoids(canvas, options = {}) {
     get phi(){ return (this.fovDeg * Math.PI) / 180; },
 
     // режим выбора соседей для match/center
-    neighborMode: options.neighborMode ?? 'metric', // 'metric' | 'topo'
+    // neighborMode: options.neighborMode ?? 'metric', // 'metric' | 'topo'
+    neighborMode: options.neighborMode ?? true,
     kTopo: options.kTopo ?? 7,                      // число ближайших (топологическое)
 
     // веса правил (безразмерные)
@@ -97,7 +101,7 @@ export function initBoids(canvas, options = {}) {
 
   // Соседи для правил match/center по выбранному режиму
   function neighborsForMatchCenter(self, boids){
-    if (params.neighborMode === 'metric') {
+    if (params.neighborMode) {
       const res = [];
       for (const other of boids){
         if (other===self) continue;
@@ -213,7 +217,7 @@ export function initBoids(canvas, options = {}) {
       const A_center = this.accelCenter(boids);
       const A_sep    = this.accelSep(boids);
 
-      const A_damp = (params.dampMode === 'accel')
+      const A_damp = (params.dampMode)
         ? mult(this.V, -params.gamma)   // A_damp = -gamma V
         : {x:0,y:0};
 
@@ -262,25 +266,19 @@ export function initBoids(canvas, options = {}) {
       }
 
       if (params.showFov){
-        // сектор обзора для match/center
         const ang = Math.atan2(this.V.y, this.V.x);
-        ctx.save();
-        ctx.translate(this.X.x, this.X.y);
-        ctx.rotate(ang);
+        const r = params.r;
         ctx.beginPath();
-        ctx.moveTo(0,0);
-        ctx.arc(0,0, params.r, -params.phi/2, params.phi/2);
+        ctx.moveTo(this.X.x, this.X.y);
+        ctx.arc(this.X.x, this.X.y, r, ang - params.phi/2, ang + params.phi/2);
         ctx.closePath();
-        ctx.fillStyle = "rgba(0,255,0,0.1)";
-        ctx.fill();
-        ctx.restore();
+        ctx.strokeStyle = "rgba(255,255,255,0.1)";
+        ctx.stroke();
 
-        // изотропная ближняя зона separation (полный круг)
         ctx.beginPath();
         ctx.arc(this.X.x, this.X.y, params.r_sep, 0, 2*Math.PI);
-        ctx.closePath();
-        ctx.fillStyle = "rgba(255,0,0,0.08)";
-        ctx.fill();
+        ctx.strokeStyle = "rgba(255,0,0,0.15)";
+        ctx.stroke();
       }
 
       const ang = Math.atan2(this.V.y, this.V.x);
@@ -358,6 +356,143 @@ export function initBoids(canvas, options = {}) {
     }
   }
 
+  async function initTooltips() {
+    const tooltipData = {
+      'dt': {
+        title: 'Шаг интегрирования $\\Delta t$',
+        description: 'Дискретизация времени для явной схемы Эйлера. Увеличение ускоряет процесс эволюции всей системы.'
+      },
+      'v_max': {
+        title: 'Ограничение скорости $v_{\\max}$',
+        description: 'Верхняя граница для нормы скорости $\\| v \\|$. Явно определяет максимальную скорость движения всех особей и косвенно ограничивает быстроту поворота без явного расчета кривизны.'
+      },
+      'a_max': {
+        title: 'Ограничение ускорения $a_{\\max}$',
+        description: 'Верхняя граница для нормы результирующего ускорения после суммирования всех компонент побуждений. Определяет маневренность, подавляет резкие изменения траектории.'
+      },
+      'v_pref': {
+        title: 'Предпочтительная скорость $v_{\\text{pref}}$',
+        description: 'Целевая скорость для опорных векторов выравнивания и центрирования. Формирует типовой масштаб движения, не являясь жестким ограничением.'
+      },
+      'tauMatch': {
+        title: 'Постоянная выравнивания $\\tau_{\\mathrm{match}}$',
+        description: 'Время релаксации в $a_{\\mathrm{match}}$. Уменьшение ускоряет локальное согласование скоростей.'
+      },
+      'tauCenter': {
+        title: 'Постоянная центрирования $\\tau_{\\mathrm{center}}$',
+        description: 'Время релаксации в $a_{\\mathrm{center}}$. Уменьшение ускоряет быстроту переориентирования особей к локальному центру.'
+      },
+      'tauSep': {
+        title: 'Постоянная разделения $\\tau_{\\mathrm{sep}}$',
+        description: 'Время релаксации в $a_{\\mathrm{sep}}$. Задает быстроту реакции на сближение.'
+      },
+      'k_sep': {
+        title: 'Интенсивность разделения $k_{\\mathrm{sep}}$',
+        description: 'Безразмерное масштабирование суммарной «социальной» силы в ближней зоне. Линейно усиливает отталкивание независимо от $\\tau_{\\mathrm{sep}}$.'
+      },
+      'dampMode': {
+        title: 'Режим вязкости среды',
+        description: 'Включение компоненты $a_{\\mathrm{damp}} = \\gamma v$ в суммарное ускорение.'
+      },
+      'gamma': {
+        title: 'Коэффициент вязкости $\\gamma$',
+        description: 'Параметр экспоненциального затухания свободного движения.'
+      },
+      'neighborMode': {
+        title: 'Схема соседства',
+        description: 'Выбор окружения при выравнивании и центрировании: метрическое - по радиусу $r$, топологическое - по ближайшим $k$ соседям.'
+      },
+      'r': {
+        title: 'Радиус восприятия $r$',
+        description: 'Порог расстояния для метрического соседства. Применяется совместно с углом моделируемого поля зрения $\\phi$.'
+      },
+      'kTopo': {
+        title: 'Число топологических соседей $k$',
+        description: 'Размерность окружения при топологической схеме соседства. Не зависит от плотности агентов.'
+      },
+      'fovDeg': {
+        title: 'Угол поля восприятия $\\phi$',
+        description: 'Полный угол поля восприятия, ориентируемого относительно текущей скорости $v$. Определяет анизотропный выбор соседей.'
+      },
+      'r_sep': {
+        title: 'Радиус ближней зоны $r_{\\mathrm{sep}}$',
+        description: 'Изотропная зона действия правила разделения. Не зависит от сектора $\\phi$.'
+      },
+      'w_match': {
+        title: 'Вес выравнивания $w_{\\mathrm{match}}$',
+        description: 'Линейное масштабирование вклада компоненты выравнивания скоростей $a_{\\mathrm{match}}$ в суммарное ускорение.'
+      },
+      'w_center': {
+        title: 'Вес центрирования $w_{\\mathrm{center}}$',
+        description: 'Линейное масштабирование вклада компоненты центрирования $a_{\\mathrm{center}}$ в суммарное ускорение.'
+      },
+      'w_sep': {
+        title: 'Вес разделения $w_{\\mathrm{sep}}$',
+        description: 'Линейное масштабирование вклада компоненты разделения $a_{\\mathrm{sep}}$ в суммарное ускорение.'
+      },
+      'boidCount': {
+        title: 'Число агентов $N$',
+        description: 'Количество особей на сцене.'
+      },
+      'tracing': {
+        title: 'След траектории',
+        description: 'Отрисовка историй движения особей. Несет лишь визуальный характер, не влияя на динамику.'
+      },
+      'showFov': {
+        title: 'Отображения полей восприятия',
+        description: 'Отрисовка сектора $\\phi$ и окружности $r_{\\mathrm{sep}}$ для отображения геометрии восприятия.'
+      }
+    };
+
+    // Создаем скрытые элементы для предрендеринга LaTeX
+    const hiddenContainer = document.createElement('div');
+    hiddenContainer.style.position = 'absolute';
+    hiddenContainer.style.left = '-9999px';
+    hiddenContainer.style.visibility = 'hidden';
+    document.body.appendChild(hiddenContainer);
+
+    // Предрендериваем все формулы
+    for (const [key, data] of Object.entries(tooltipData)) {
+      const element = document.createElement('div');
+      element.innerHTML = `<strong>${data.title}</strong><br>${data.description}`;
+      hiddenContainer.appendChild(element);
+      tooltipElements[key] = element;
+    }
+
+    // Рендерим LaTeX формулы
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      await window.MathJax.typesetPromise([hiddenContainer]);
+    }
+
+    const tooltip = document.getElementById('tooltip');
+    const tooltipLabels = document.querySelectorAll('.tooltip-label');
+
+    tooltipLabels.forEach(label => {
+      const tooltipKey = label.getAttribute('data-tooltip');
+      const element = tooltipElements[tooltipKey];
+      
+      if (element) {
+        label.addEventListener('mouseenter', (e) => {
+          tooltip.innerHTML = element.innerHTML;
+          tooltip.style.display = 'block';
+          
+          const rect = label.getBoundingClientRect();
+          tooltip.style.left = (rect.right + 10) + 'px';
+          tooltip.style.top = rect.top + 'px';
+        });
+
+        label.addEventListener('mouseleave', () => {
+          tooltip.style.display = 'none';
+        });
+
+        label.addEventListener('mousemove', (e) => {
+          tooltip.style.left = (e.clientX + 10) + 'px';
+          tooltip.style.top = (e.clientY - 10) + 'px';
+        });
+      }
+    });
+  }
+
   function createUI(){
     if (params.isPreview) {
       // Для превью рисуем статичный кадр после небольшой задержки, 
@@ -375,6 +510,11 @@ export function initBoids(canvas, options = {}) {
         drawStaticFrame
       };
     }
+
+    // Инициализация всплывающих подсказок
+    setTimeout(() => {
+      initTooltips();
+    }, 1000); // Даём время MathJax для загрузки
 
     const controlPanel = document.getElementById('controlPanel');
     const toggleBtn = document.getElementById('toggleBtn');
@@ -394,7 +534,7 @@ export function initBoids(canvas, options = {}) {
     const pauseBtn = document.getElementById('pauseBtn');
     pauseBtn.addEventListener('click', () => {
       isPaused = !isPaused;
-      pauseBtn.textContent = isPaused ? 'Pause' : 'Play';
+      pauseBtn.textContent = isPaused ? 'Play' : 'Pause';
       pauseBtn.classList.toggle('active', !isPaused);
     });
 
@@ -402,7 +542,7 @@ export function initBoids(canvas, options = {}) {
     const wallsBtn = document.getElementById('wallsBtn');
     wallsBtn.addEventListener('click', () => {
       wallsEnabled = !wallsEnabled;
-      wallsBtn.textContent = wallsEnabled ? 'Стены' : 'Тор';
+      wallsBtn.textContent = !wallsEnabled ? 'Walls ON' : 'Walls OFF';
       wallsBtn.classList.toggle('active', wallsEnabled);
     });
 
@@ -410,6 +550,7 @@ export function initBoids(canvas, options = {}) {
     const fovBtn = document.getElementById('fovBtn');
     fovBtn.addEventListener('click', () => {
       params.showFov = !params.showFov;
+      fovBtn.textContent = !params.showFov ? 'FOV ON' : 'FOV OFF';
       fovBtn.classList.toggle('active', params.showFov);
     });
 
@@ -417,6 +558,7 @@ export function initBoids(canvas, options = {}) {
     const tracingBtn = document.getElementById('tracingBtn');
     tracingBtn.addEventListener('click', () => {
       params.tracing = !params.tracing;
+      tracingBtn.textContent = !params.tracing ? 'Trace ON' : 'Trace OFF';
       tracingBtn.classList.toggle('active', params.tracing);
     });
 
@@ -431,7 +573,35 @@ export function initBoids(canvas, options = {}) {
         advancedBtn.textContent = 'Скрыть';
       } else {
         advancedControls.classList.remove('show');
-        advancedBtn.textContent = 'Расширенные';
+        advancedBtn.textContent = 'Расширенные настройки';
+      }
+    });
+
+    // Кнопка соседства
+    const neighborBtn = document.getElementById('neighborBtn');
+    const k_topo = document.getElementById('k_topo');
+    neighborBtn.addEventListener('click', () => {
+      params.neighborMode = !params.neighborMode;
+      if (!params.neighborMode) {
+        k_topo.classList.add('show');
+        neighborBtn.textContent = 'topo';
+      } else {
+        k_topo.classList.remove('show');
+        neighborBtn.textContent = 'metric';
+      }
+    });
+
+    // Кнопка сопротивления
+    const dampBtn = document.getElementById('dampBtn');
+    const damp = document.getElementById('damp');
+    dampBtn.addEventListener('click', () => {
+      params.dampMode = !params.dampMode;
+      if (!params.dampMode) {
+        damp.classList.remove('show');
+        dampBtn.textContent = 'off';
+      } else {
+        damp.classList.add('show');
+        dampBtn.textContent = 'accel';
       }
     });
 
@@ -477,17 +647,6 @@ export function initBoids(canvas, options = {}) {
     bindSlider('tausep', (v) => params.tauSep = v);
     bindSlider('ksep', (v) => params.k_sep = v);
     bindSlider('gamma', (v) => params.gamma = v);
-
-    // Селекты
-    const neighborMode = document.getElementById('neighborMode');
-    neighborMode.addEventListener('change', () => {
-      params.neighborMode = neighborMode.value;
-    });
-
-    const dampMode = document.getElementById('dampMode');
-    dampMode.addEventListener('change', () => {
-      params.dampMode = dampMode.value;
-    });
 
     startAnimation();
   }

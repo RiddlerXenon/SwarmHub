@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Муравьиный алгоритм (ACO)</title>
+  <link rel="stylesheet" href="../static/css/styles.css">
+  <!-- Подключаем MathJax для рендеринга LaTeX -->
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      chtml: {
+        scale: 0.9
+      }
+    };
+  </script>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div id="controlPanel" class="collapsed">
+    <button id="toggleBtn">☰</button>
+    <div id="mainControls">
+      <!-- Информационная панель -->
+      <table class="info-display">
+        <tr>
+          <th class="id-lables">Итерации</th>
+          <th class="id-lables">Лучший маршрут</th>
+          <th class="id-lables">Текущий маршрут</th>
+        </tr>
+        <tr>
+          <td class="id-values">
+            <span id="iterationCount">0</span>
+          </td>
+          <td class="id-values">
+            <span id="bestPathLength">–</span>
+          </td>
+          <td class="id-values">
+            <span id="currentPathLength">–</span>
+          </td>
+        </tr>
+      </table>
+      
+      <!-- Кнопки управления -->
+      <div class="control-group">
+        <div class="button-group">
+          <button id="newGraphBtn">Новый граф</button>
+          <button id="startBtn">Старт</button>
+          <button id="stepBtn">Шаг</button>
+        </div>
+      </div>
+
+      <!-- Основные параметры -->
+      <div class="control-group">
+        <div class="control-row">
+          <label>Узлы:</label>
+          <input type="range" id="nodeCount" min="5" max="25" value="10">
+          <span class="value-display" id="nodeCountVal">10</span>
+        </div>
+        <div class="control-row">
+          <label>Скорость:</label>
+          <input type="range" id="speed" min="100" max="2000" step="100" value="1000">
+          <span class="value-display" id="speedVal">1000 мс</span> 
+        </div>
+      </div>
+
+      <!-- Основные параметры ACO -->
+      <div class="control-group">
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="alpha">Влияние феромона α:</label>
+          <input type="range" id="alpha" min="0" max="5" step="0.1" value="1.0">
+          <span class="value-display" id="alphaVal">1.0</span>
+        </div>
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="beta">Влияние эвристики β:</label>
+          <input type="range" id="beta" min="0" max="10" step="0.1" value="2.0">
+          <span class="value-display" id="betaVal">2.0</span> 
+        </div>
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="rho">Коэффициент испарения ρ:</label>
+          <input type="range" id="rho" min="0.01" max="1" step="0.01" value="0.5">
+          <span class="value-display" id="rhoVal">0.5</span>
+        </div>
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="Q">Интенсивность подкрепления Q:</label>
+          <input type="range" id="Q" min="0.1" max="10" step="0.1" value="1.0">
+          <span class="value-display" id="QVal">1.0</span>
+        </div>
+      </div>
+
+      <!-- Кнопка расширенных настроек -->
+      <div id="advancedCG" class="control-group">
+        <button id="advancedBtn">Расширенные настройки</button>
+      </div>
+
+      <!-- Расширенные настройки -->
+      <div id="advancedControls">
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="m">Численность колонии m:</label>
+          <input type="range" id="colonySize" min="1" max="50" step="1" value="10">
+          <span class="value-display" id="colonySizeVal">10</span>
+        </div>
+
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="T">Бюджет итераций T:</label>
+          <input type="range" id="maxIterations" min="50" max="500" step="10" value="100">
+          <span class="value-display" id="maxIterationsVal">100</span>
+        </div>
+
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="tau0">Начальный феромон τ₀:</label>
+          <input type="range" id="tau0" min="0.1" max="5" step="0.1" value="1.0">
+          <span class="value-display" id="tau0Val">1.0</span>
+        </div>
+
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="graphType">Тип графа:</label>
+          <button id="graphTypeBtn">неориентированный</button>
+        </div>
+
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="startDist">Стартовое распределение:</label>
+          <button id="startDistBtn">Фиксированное</button>
+        </div>
+
+        <div id="seed_container" class="control-row">
+          <label class="tooltip-label" data-tooltip="seed">Seed (ГПСЧ):</label>
+          <input type="number" id="seed" min="0" max="9999" value="42">
+        </div>
+
+        <div class="control-row">
+          <label>Визуализация:</label>
+          <button id="visualBtn">полная</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Всплывающие подсказки -->
+  <div id="tooltip" class="tooltip"></div>
+
+  <script type="module">
+    import { initAnts } from "../static/js/aco.js";
+
+    const canvas = document.getElementById("canvas");
+    
+    const { createUI } = initAnts(canvas, {
+      nodeCount: 10,
+      alpha: 1.0,
+      beta: 2.0,
+      rho: 0.5,
+      Q: 1.0,
+      colonySize: 10,
+      maxIterations: 100,
+      tau0: 1.0,
+      graphType: 'undirected',
+      startDist: 'fixed',
+      seed: 42,
+      speed: 1000,
+      isPreview: false
+    });
+
+    // Создаем UI
+    createUI();
+  </script>
+</body>
+</html>

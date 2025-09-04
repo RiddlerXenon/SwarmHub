@@ -1,0 +1,143 @@
+\documentclass{article}
+
+% Language setting
+% Replace `english' with e.g. `spanish' to change the document language
+\usepackage[russian]{babel}
+
+% Set page size and margins
+% Replace `letterpaper' with `a4paper' for UK/EU standard size
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+% Useful packages
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\begin{document}
+
+
+Реализация поведенческого роевого алгоритма на основе модели Boids [1] в дискретном времени с полем восприятия [2], двумя схемами формирования соседства (метрической и топологической) [3], тремя базовыми поведенческими побуждениями (разделение, выравнивание, центрирование) [1, 2], опциональной линейной вязкостью среды и ограничением (с насыщением) норм ускорения и скорости [1, 4]. Состояние каждой особи $i=1,\dots,N$ на шаге $n\in\mathbb{N}$ задаётся парой $(x_i^n,v_i^n)\in\mathbb{R}^2\times\mathbb{R}^2$. Управляющее действие определяется как вектор «требуемого» ускорения $a_i^n$, после чего выполняется один шаг явного метода Эйлера с ограничением по нормам [4]. Параметры модели включают шаг интегрирования $\Delta t>0$, верхние оценки $\|v\|\le v_{\max}$ и $\|a\|\le a_{\max}$, целевую маршевую скорость $v_{\mathrm{pref}}\in(0,v_{\max}]$, временные константы релаксации $\tau_{\mathrm{match}},\tau_{\mathrm{center}},\tau_{\mathrm{sep}}>0$, неотрицательные коэффициенты для взвешенного суммирования правил $w_{\mathrm{match}},w_{\mathrm{center}},w_{\mathrm{sep}}\ge 0$, радиус восприятия $r>0$ (для метрического соседства) и зону отталкивания $r_{\mathrm{sep}}>0$, угол обзора $\phi\in(0,2\pi]$ [2], параметр топологического соседства $k\in\mathbb{N}$, а также коэффициент линейного вязкого сопротивления $\gamma\ge0$ [4].
+
+Введем эвристику отбора соседей. Для этого определим ориентированную область видимости особи $i$ как угловой сектор с вершиной в $x_i^n$, осью вдоль текущего направления $v_i^n$ и полууглом $\phi/2$ [2]. Формально, особь $j \ne i$ находится в поле восприятия $i$ на шаге $n$, если 
+\begin{equation}
+    \langle v_i^n,\,x_j^n-x_i^n\rangle \ge \|v_i^n\|\,\|x_j^n-x_i^n\|\cos(\phi/2).
+\end{equation}
+При $\|v_i^n\|=0$ поле симуляруемого восприятия полагается изотропным. Множество возможных соседей ограничивается данным условием, после чего вводится одна из двух реализованных схем. Для метрической рассматриваются $j$ такие, что 
+\begin{equation}
+    \|x_j^n-x_i^n\|\le r.
+\end{equation}
+В топологической  осуществляется выбор $k$ ближайших по сферической (евклидовой) норме внутри сектора. Если их число меньше $k$, то подходящими полагаются все доступные [3]. Полученный результат в дальнейшем будем определять как окружение $\mathcal{N}_i^n$. Для правила разделения вводится отдельная изотропная ближняя зона 
+\begin{equation}
+    \{j\ne i:\|x_j^n-x_i^n\|<r_{\mathrm{sep}}\},
+\end{equation}
+не связанная с сектором [1, 2]. С целью реализации ограничений $\|v\|\le v_{\max}$ и $\|a\|\le a_{\max}$, а также  отсечения по норме при явном шаге интегрирования зададим оператор насыщения по норме
+\begin{equation}
+    \operatorname{sat}_M(u)=
+    \begin{cases}
+    u, & \|u\|\le M,\\
+    u\dfrac{M}{\|u\|}\,, & \|u\|>M,
+    \end{cases}
+    \qquad M\ge 0,\ \ u\in\mathbb{R}^d;
+\end{equation}
+и оператор установки нормы
+\begin{equation}
+    \operatorname{setmag}(u,m)=
+    \begin{cases}
+    u\dfrac{m}{\|u\|}\,, & \|u\|>0,\\
+    0, & \|u\|=0,
+    \end{cases}
+    \qquad m\ge 0,\ \ u\in\mathbb{R}^d.
+\end{equation}
+
+Закон управления состоит из суммы трех поведенческих побуждений, соответствующих правилам разделения, выравнивания и центрирования [1, 2, 4, 5]. \textit{Компонента выравнивания} согласует скорость особи с локальным средним по ее окружению. При $|\mathcal N_i^n|>0$ локальное среднее скорости соседей задается как
+\begin{equation}
+    \bar v_i^n=\frac{1}{|\mathcal N_i^n|}\sum_{j\in\mathcal N_i^n} v_j^n,
+\end{equation}
+после чего формируется опорный вектор скорости выравнивания
+\begin{equation}
+    r_i^{\mathrm{match}}=
+    \begin{cases}
+    \mathrm{setmag}\!\bigl(\bar v_i^n,\min\{v_{\mathrm{pref}},v_{\max}\}\bigr), & \|\bar v_i^n\|\ge\varepsilon,\\
+    v_i^n, & \|\bar v_i^n\|< \varepsilon.
+\end{cases}
+\end{equation}
+Ускорение выравнивания записывается уравнением релаксации первого порядка
+\begin{equation}
+    a_i^{\mathrm{match}}=\dfrac{r_i^{\mathrm{match}}-v_i^n}{\max\{\tau_{\mathrm{match}}, \varepsilon\}}.
+\end{equation}
+Если $|\mathcal N_i^n|=0$, то $a_i^{\mathrm{match}}=0$. Формально, это позволяет при исчезающе малом локальном среднем скорости не навязывать системе искусственное «стягивание» к нулю и исключить неопределенность направления оператора $\mathrm{setmag}(0,\cdot)$. В приводимой авторами реализации $\varepsilon=10^{-6}$.  \textit{Компонента центрирования} направляет особь к локальному центру соседей. При $|\mathcal N_i^n|>0$ положим
+\begin{equation}
+    c_i^n=\frac{1}{|\mathcal N_i^n|}\sum_{j\in\mathcal N_i^n} x_j^n,\qquad \bar c_i^n=c_i^n-x_i^n.
+\end{equation}
+Опорный вектор скорости центрирования определим как
+\begin{equation}
+    r_i^{\mathrm{center}}=\mathrm{setmag}\!\bigl(\bar c_i^n,\min\{v_{\mathrm{pref}},v_{\max}\}\bigr).
+\end{equation}
+Ускорение центрирования задается уравнением релаксации, аналогичным уравнению (8)
+\begin{equation}
+    a_i^{\mathrm{center}}=
+    \begin{cases}
+    \dfrac{r_i^{\mathrm{center}}-v_i^n}{\max\{\tau_{\mathrm{center}},\varepsilon\}}, & |\mathcal N_i^n|>0\ \wedge \| \bar c_i^n\|\ge \varepsilon.\\
+    0.
+\end{cases}
+\end{equation}
+\textit{Компонента разделения} реализует локализованное отталкивание в изотропной ближней зоне и не зависит от введенной ранее эвристики отбора соседей $\mathcal N_i^n$. Обозначив относительный радиус-вектор $d_{ij}^n=x_j^n-x_i^n$, направленный от особи $i$ к особи $j$, находим суммарную отталкивающую «социальную» силу, действующую на особь $i$ на шаге $n$ как
+\begin{equation}
+    F_i^n=\sum_{\substack{j\ne i\\[3pt] 0<\|d_{ij}^n\| < r_{\mathrm{sep}}}}
+    \max\!\left\{0,\frac{r_{\mathrm{sep}}}{\|d_{ij}^n\|}-1\right\}\!\left(-\frac{d_{ij}^n}{\|d_{ij}^n\|}\right),
+\end{equation}
+где каждый компонент суммирования направлен от $j$ к $i$ и имеет неотрицательный вес, убывающий монотонно по расстоянию и обнуляющийся при $\|d_{ij}^n \| \ge r_{sep}$. Тогда вклад разделения определяется как
+\begin{equation}
+    a_i^{\mathrm{sep}}=\frac{k_{\mathrm{sep}}}{\max\{\tau_{\mathrm{sep}},\varepsilon\}}\,F_i^n,
+\end{equation}
+а при отсутствии ближайших соседей $\left( \forall j : \| d_{ij}^n \| \ge r_{sep} \right)$ [1, 2]. Это равносильно движению вниз по градиенту радиально возрастающего отталкивающего потенциала и согласуется с подходом «социальных сил» для предотвращения столкновений. Опционально вводится компонента вязкого сопротивления среды. При ее включении вклад в управляемое ускорение особи $i$ на шаге $n$ задается как
+\begin{equation}
+    a_i^{\mathrm{damp}}=-\gamma\,v_i^n,\quad \gamma \ge 0,
+\end{equation}
+при $\gamma < 0$ полагаем $a_i^{damp} = 0$. Коэффициент линейного сопротивления $\gamma$ задает экспоненциальную скорость затухания свободного движения для непрерывной модели
+\begin{equation}
+    \dot{v} =- \gamma v,
+\end{equation}
+откуда решение имеет вид 
+\begin{equation}
+    v(t) = v(0) e^{-\gamma t}.
+\end{equation}
+
+Конечная суперпозиция побуждений и насыщение в приводимой авторами реализации формализуется следующим образом. «Запрашиваемое» управляемое ускорение формируется как сумма всех поведенческих вкладов $a_i^{\mathrm{match}}$, $a_i^{\mathrm{center}}$ и $a_i^{\mathrm{sep}}$ с опциональным компонентом вязкого сопротивления среды $a_i^{\mathrm{damp}}$, принимая вид
+\begin{equation}
+    a_{i, req}^n=
+    w_{\mathrm{sep}}\,a_i^{\mathrm{sep}}+
+    w_{\mathrm{match}}\,a_i^{\mathrm{match}}+
+    w_{\mathrm{center}}\,a_i^{\mathrm{center}}+
+    a_i^{\mathrm{damp}},
+\end{equation}
+где $w_{\mathrm{sep}}, w_{\mathrm{match}}, w_{\mathrm{center}} \ge 0$ являются параметрами, определяющими коэффициент линейного масштабирования соответсвующего поведенческого правила [1, 4]. К полученному значению применяется насыщение по норме
+\begin{equation}
+    a_i^n = \operatorname{sat}_{a_{max}} \left( a_{i, req}^n \right).
+\end{equation}
+Данное ускорение будем определять как фактическое, удовлетворяющее требованию $\| a_i^n \| \le a_{max}$ для всех $n$. После реализуется дискретная кинематика на основе явной схемы Эйлера с отсечкой скорости:
+\begin{equation}
+    v_i^{n+1} = \operatorname{sat}_{v_{max}} \left( v_i^n +a_i^n \Delta t \right),
+\end{equation}
+\begin{equation}
+    x_i^{n+1} = x_i^n + v_i^{n+1} \Delta t,
+\end{equation}
+где $\Delta t >0 \wedge \| v_i^{n+1} \| \le v_{max}$ [4].
+
+В прямоугольной области визуализации $[0, W] \times [0, H]$ заданы  отражающие граничные условия. При выходе за область соответствующая координата положения ортогонально  проецируется на границу, то есть проводится замена на $0$ или $W$ для $x$ и на $0$ или $H$ для $y$, а соответствующая компонента скорости меняет свой знак. Это реализует зеркальное отражение и не нарушает ограничение $\|v_i^{n+1}\|\le v_{\max}$ [1, 4]. Формально, секторная фильтрация по углу $\phi$ вводит механизм моделирования восприятия агентов. Метрическое соседство $\{j:\|x_j^n-x_i^n\|\le r\}$ соответствует классической постановке Boids и инженерным процедурам стаивания [1]. Топологическое соседство фиксированного размера согласуется с эмпирикой по стаям скворцов, где число эффективно взаимодействующих ближайших соседей составляет порядка 6 - 7 и не зависит от плотности [3]. Отдельная ближняя зона $r_{\mathrm{sep}}$ обеспечивает локальную динамику отталкивания, в то время как выравнивание и центрирование формируют согласованную динамику роя [1, 2]. На феноменологическом уровне различные вариации параметров $(\Delta t,v_{\max},a_{\max},v_{\mathrm{pref}},\tau_{\cdot},w_{\cdot},r,r_{\mathrm{sep}},\phi,k,\gamma)$ воспроизводят известные переходы «беспорядок / когерентное движение», качественно схожие с поведением в модели Вичека, а также в смежных агентных системах [2, 3, 5], но строгая теоретическая эквивалентность авторами не доказывается. 
+
+Выбор окружения в метрическом режиме требует фильтрации по сектору и порогу расстояния, в топологическом — дополнительной сортировки кандидатов по евклидову расстоянию; в наивной реализации суммарная сложность шага по времени составляет $O(N^2)$ для метрического режима и $O(N^2 \log{N})$ для топологического, что является допустимым для интерактивной визуализации.
+
+\noindent\hrulefill
+
+1. Reynolds, Craig. (1987). Flocks, Herds, and Schools: A Distributed Behavioral Model. ACM SIGGRAPH Computer Graphics. 21. 25-34. 10.1145/280811.281008.
+
+2. Couzin F.R.S., Iain & Krause, Jens & James, Richard & Ruxton, Graeme & Franks, Nigel. (2002). Collective Memory and Spatial Sorting in Animal Groups. Journal of theoretical biology. 218. 1-11. 10.1006/jtbi.2002.3065.
+
+3. Ballerini, M & Cabibbo, N & Candelier, Raphaël & Cavagna, A & Cisbani, Evaristo & Giardina, Irene & Lecomte, V & Orlandi, A & Parisi, G & Procaccini, A & Viale, Massimiliano & Zdravkovic, Vladimir. (2008). Interaction Ruling Animal Collective Behaviour Depends on Topological rather than Metric Distance: Evidence from a Field Study. Proceedings of the National Academy of Sciences of the United States of America. 105. 1232-7. 10.1073/pnas.0711437105. 
+
+4. (2006). Flocking for Multi-Agent Dynamic Systems: Algorithms and Theory. Automatic Control, IEEE Transactions on. 51. 401 - 420. 10.1109/TAC.2005.864190. 
+
+5. Vicsek T, Czirók A, Ben-Jacob E, Cohen I I, Shochet O. Novel type of phase transition in a system of self-driven particles. Phys Rev Lett. 1995 Aug 7;75(6):1226-1229. doi: 10.1103/PhysRevLett.75.1226. PMID: 10060237.
+
+\end{document}

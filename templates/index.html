@@ -23,13 +23,13 @@
     <!-- Карточка 1 с превью -->
     <div class="card">
       <canvas id="previewBoids" onclick="openModal('./boids.html')"></canvas>
-      <div class="desc" onclick="openModal('./boids_description.html')">Boids Simulation</div>
+      <div class="desc" onclick="openModal('./descriptions/boids.html')">Boids Simulation</div>
     </div>
 
     <!-- Карточка 2 -->
     <div class="card">
-      <canvas id="previewAnts" onclick="openModal('./ants.html')"></canvas>
-      <div class="desc">Ant Colony Optimization</div>
+      <canvas id="previewAnts" onclick="openModal('./aco.html')"></canvas>
+      <div class="desc" onclick="openModal('./descriptions/aco.html')">Ant Colony Optimization</div>
     </div>
 
     <!-- Карточка 3 -->
@@ -77,7 +77,7 @@
 
   <script type="module">
     import { initBoids } from "../static/js/boids.js";
-    import { initAnts } from "../static/js/ants.js";
+    import { initAnts } from "../static/js/aco.js";
     import { initSDS } from "../static/js/sds.js";
 
     // Ждем загрузки DOM
@@ -130,29 +130,29 @@
       }
 
       // Превью для ants (статичный граф без анимации)
-      const previewAnts = document.getElementById("previewAnts");
-      if (previewAnts) {
-        initAnts(previewAnts, { 
-          nodeCount: 8, 
-          alpha: 1.0, 
-          beta: 2.0, 
-          rho: 0.3, 
-          autoRun: false 
-        });
-      }
+      // const previewAnts = document.getElementById("previewAnts");
+      // if (previewAnts) {
+      //   initAnts(previewAnts, { 
+      //     nodeCount: 8, 
+      //     alpha: 1.0, 
+      //     beta: 2.0, 
+      //     rho: 0.3, 
+      //     autoRun: false 
+      //   });
+      // }
 
       // Превью для SDS (статичная визуализация)
-      const previewSDS = document.getElementById("previewSDS");
-      if (previewSDS) {
-        initSDS(previewSDS, { 
-          N: 30, 
-          func: 'twopeaks', 
-          showHeatmap: true, 
-          showTraj: false, 
-          showBest: true,
-          heatGrid: 16
-        });
-      }
+      // const previewSDS = document.getElementById("previewSDS");
+      // if (previewSDS) {
+      //   initSDS(previewSDS, { 
+      //     N: 30, 
+      //     func: 'twopeaks', 
+      //     showHeatmap: true, 
+      //     showTraj: false, 
+      //     showBest: true,
+      //     heatGrid: 16
+      //   });
+      // }
     });
   </script>
 </body>
