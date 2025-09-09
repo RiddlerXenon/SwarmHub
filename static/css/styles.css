@@ -286,7 +286,7 @@ canvas {
 }
 
 /* ACO */
-#visualBtn, #graphTypeBtn, #startDistBtn {
+#visualBtn, #graphTypeBtn, #startDistBtn, #funcBtn, #annealBtn {
   background: #222;
   border: none;
   color: white;
@@ -296,7 +296,7 @@ canvas {
   margin-bottom: 3px;
 }
 
-#visualBtn:hover, #graphTypeBtn:hover, #startDistBtn:hover {
+#visualBtn:hover, #graphTypeBtn:hover, #startDistBtn:hover, #funcBtn:hover, #annealBtn:hover {
   background: #555;
 }
 

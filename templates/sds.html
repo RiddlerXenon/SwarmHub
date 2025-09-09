@@ -2,33 +2,141 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Stochastic Diffusion Search (SDS)</title>
+  <title>Стохастический диффузионный поиск (SDS)</title>
   <link rel="stylesheet" href="../static/css/styles.css">
+  <!-- Подключаем MathJax для рендеринга LaTeX -->
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      chtml: {
+        scale: 0.9
+      }
+    };
+  </script>
 </head>
 <body>
   <canvas id="canvas"></canvas>
-  <div class="controls" id="controls"></div>
+
+  <div id="controlPanel" class="collapsed">
+    <button id="toggleBtn">☰</button>
+    <div id="mainControls">
+      <!-- Информационная панель -->
+      <table class="info-display">
+        <tr>
+          <th class="id-lables">Итерации $t$</th>
+          <th class="id-lables">Лучшее $f^*$</th>
+          <th class="id-lables">Активные $|\mathcal{W}^{(t)}|$</th>
+        </tr>
+        <tr>
+          <td class="id-values">
+            <span id="iterationCount">0</span>
+          </td>
+          <td class="id-values">
+            <span id="bestFitness">0.0000</span>
+          </td>
+          <td class="id-values">
+            <span id="winnersCount">0</span>
+          </td>
+        </tr>
+      </table>
+      
+      <!-- Кнопки управления -->
+      <div class="control-group">
+        <div class="button-group">
+          <button id="pauseBtn">Пауза</button>
+          <button id="newSeedBtn">Новый сид</button>
+        </div>
+        <div class="button-group">
+          <button id="showHeatmapBtn">Тепло ВКЛ</button>
+          <button id="showTrajBtn">След ВКЛ</button>
+          <button id="showBestBtn">Макс ВКЛ</button>
+        </div>
+      </div>
+
+      <!-- Основные параметры -->
+      <div class="control-group">
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="func">Целевая функция $f$:</label>
+          <button id="funcBtn">Две горки</button>
+        </div>
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="N">Размер популяции $N$:</label>
+          <input type="range" id="populationSize" min="50" max="500" step="10" value="300">
+          <span class="value-display" id="populationSizeVal">300</span>
+        </div>
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="sigma">Дисперсия шума $\sigma_0$:</label>
+          <input type="range" id="sigma" min="0.01" max="0.2" step="0.01" value="0.05">
+          <span class="value-display" id="sigmaVal">0.05</span>
+        </div>
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="restartProb">Вероятность перезапуска $p_{\text{restart}}$:</label>
+          <input type="range" id="restartProb" min="0" max="1" step="0.05" value="0.5">
+          <span class="value-display" id="restartProbVal">0.50</span>
+        </div>
+      </div>
+
+      <!-- Кнопка расширенных настроек -->
+      <div id="advancedCG" class="control-group">
+        <button id="advancedBtn">Расширенные настройки</button>
+      </div>
+
+      <!-- Расширенные настройки -->
+      <div id="advancedControls">
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="rho">Коэффициент затухания $\rho$:</label>
+          <input type="range" id="annealDecay" min="0.95" max="0.999" step="0.001" value="0.999">
+          <span class="value-display" id="annealDecayVal">0.999</span>
+        </div>
+
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="maxIterations">Бюджет итераций $T$:</label>
+          <input type="range" id="maxIterations" min="100" max="2000" step="50" value="1000">
+          <span class="value-display" id="maxIterationsVal">1000</span>
+        </div>
+
+        <div class="control-row">
+          <label class="tooltip-label" data-tooltip="anneal">Адаптивное затухание:</label>
+          <button id="annealBtn">выкл</button>
+        </div>
+
+        <div id="seed_container" class="control-row">
+          <label class="tooltip-label" data-tooltip="seed">Seed (ГПСЧ):</label>
+          <input type="number" id="seed" min="0" max="999999999" value="123456789">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Всплывающие подсказки -->
+  <div id="tooltip" class="tooltip"></div>
 
   <script type="module">
     import { initSDS } from "../static/js/sds.js";
 
     const canvas = document.getElementById("canvas");
-    const controlsContainer = document.getElementById("controls");
     
-    const { params, createControls } = initSDS(canvas, {
-      N: 50,
+    const { createUI } = initSDS(canvas, {
+      N: 300,
       func: 'twopeaks',
-      sigma: 0.1,
-      stepsPerFrame: 1,
-      restartProb: 0.1,
+      sigma: 0.05,
+      restartProb: 0.5,
+      anneal: false,
+      annealDecay: 0.999,
       showHeatmap: true,
-      showTraj: false,
+      showTraj: true,
       showBest: true,
-      anneal: false
+      stepsPerFrame: 3,
+      seed: 123456789,
+      isPreview: false
     });
 
-    // Создаем панель управления
-    createControls(controlsContainer);
+    // Создаем UI
+    createUI();
   </script>
 </body>
 </html>

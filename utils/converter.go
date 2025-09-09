@@ -168,7 +168,7 @@ func processAlgorithmsAdvanced(content string) string {
 
 			// Обрабатываем входные параметры
 			if strings.Contains(line, "\\KwIn") {
-				kwinRe := regexp.MustCompile(`\\KwIn\{([^}]+)\}`)
+				kwinRe := regexp.MustCompile(`\\KwIn\{(.+)\}$`)
 				if matches := kwinRe.FindStringSubmatch(line); len(matches) > 1 {
 					input := processInlineMathForAlgorithm(matches[1])
 					result = append(result, `<div class="algorithm-input"><strong>Вход:</strong> `+input+`</div>`)
@@ -178,10 +178,21 @@ func processAlgorithmsAdvanced(content string) string {
 
 			// Обрабатываем выходные параметры
 			if strings.Contains(line, "\\KwOut") {
-				kwoutRe := regexp.MustCompile(`\\KwOut\{([^}]+)\}`)
+				kwoutRe := regexp.MustCompile(`\\KwOut\{(.+)\}$`)
 				if matches := kwoutRe.FindStringSubmatch(line); len(matches) > 1 {
 					output := processInlineMathForAlgorithm(matches[1])
 					result = append(result, `<div class="algorithm-output"><strong>Выход:</strong> `+output+`</div>`)
+				}
+				continue
+			}
+
+			// Обрабатываем return
+			if strings.Contains(line, "\\KwRet") {
+				kwretRe := regexp.MustCompile(`\\KwRet\{(.+)\}$`)
+				if matches := kwretRe.FindStringSubmatch(line); len(matches) > 1 {
+					indent := strings.Repeat("&nbsp;&nbsp;&nbsp;&nbsp;", indentLevel)
+					ret := processInlineMathForAlgorithm(matches[1])
+					result = append(result, `<div class="algorithm-return">`+indent+`<strong>вернуть</strong> `+ret+`</div>`)
 				}
 				continue
 			}

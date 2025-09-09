@@ -1,4 +1,4 @@
-// Stochastic Diffusion Search (SDS) — реализация в стиле вашей функции initBoids
+// Стохастический диффузионный поиск (SDS) — реализация в стиле вашей функции initBoids
 // Однофайловый Canvas-виджет с наглядной визуализацией и интерактивными контролами.
 // Использование:
 //   const stop = initSDS(canvas, { N: 300 });
@@ -88,7 +88,7 @@ export function initSDS(canvas, options = {}) {
 
     // Поиск
     func: options.func ?? 'twopeaks', // ключ из Objectives
-    get range(){ return Objectives[this.func].range; },
+    get range(){ return Objectives[this.func].range; }, // используем диапазон из функции
     sigma: options.sigma ?? 0.05,     // дисперсия разведки
     anneal: options.anneal ?? false,  // затухание шума
     annealDecay: options.annealDecay ?? 0.999, // σ_t = σ_0 * decay^t
@@ -103,15 +103,22 @@ export function initSDS(canvas, options = {}) {
     maxTrail: options.maxTrail ?? 200,
     showBest: options.showBest ?? true,
 
-    // Палитра
-    colorWin: options.colorWin ?? '#0f172a',  // победители
-    colorLose: options.colorLose ?? '#64748b',// проигравшие
-    trail: options.trail ?? '#111827',
+    // Палитра (изменены цвета для лучшей видимости на темном фоне)
+    colorWin: options.colorWin ?? '#3ddc84',  // яркий зеленый для победителей
+    colorLose: options.colorLose ?? '#9ca3af',// светло-серый для проигравших
+    trail: options.trail ?? '#64748b',        // серо-синий для следов
+
+    // Пауза
+    isPreview: options.isPreview ?? false,
+    startPaused: options.startPaused ?? false
   };
 
-  // ===== Состояние алгоритма =====
+  // ===== Состояние симуляции =====
   let rng = new RNG(params.seed);
   let t = 0;
+  let isPaused = options.startPaused ?? false;
+  let animationId = null;
+  let isAnimationRunning = false;
 
   let agents = [];  // {x,y, success}
   let winnersIdx = [];
@@ -124,6 +131,9 @@ export function initSDS(canvas, options = {}) {
   // Offscreen теплокарта
   let heatCanvas = document.createElement('canvas');
   let heatValid = false; // требует перерендера при смене функции/размера
+
+  // Предрендеренные LaTeX формулы
+  let tooltipElements = {};
 
   // ===== Инициализация =====
   function randInRange(){ return (rng.next()*2 - 1) * params.range; }
@@ -141,7 +151,7 @@ export function initSDS(canvas, options = {}) {
   // ===== Математика целевой функции =====
   function f(x,y){ return Objectives[params.func].f(x,y); }
 
-  // ===== Тепловая карта =====
+  // ===== Тепловая карта (более темная палитра) =====
   function renderHeatmap(){
     heatCanvas.width = canvas.width;
     heatCanvas.height = canvas.height;
@@ -162,40 +172,40 @@ export function initSDS(canvas, options = {}) {
     }
     const denom = (fmax - fmin) || 1e-9;
 
-    // Колормапа для тёмного фона: глубокий синий → бирюзовый → оливковый → янтарный → тёплый красный
+    // Более темная колормапа для соответствия стилю интерфейса
     const grad = t => {
       t = clamp(t, 0, 1);
       if (t < 0.25) { 
-        // Синий → бирюзовый
+        // Очень темный синий → темный синий
         const u = t / 0.25;
         return [
-          Math.round(20 + 20 * u),   // R: 20 → 40
-          Math.round(40 + 80 * u),   // G: 40 → 120
-          Math.round(90 + 100 * u)   // B: 90 → 190
+          Math.round(10 + 15 * u),   // R: 10 → 25
+          Math.round(15 + 25 * u),   // G: 15 → 40
+          Math.round(25 + 35 * u)    // B: 25 → 60
         ];
       } else if (t < 0.5) { 
-        // Бирюзовый → зелёный
+        // Темный синий → темный зеленый
         const u = (t - 0.25) / 0.25;
         return [
-          Math.round(40 + 40 * u),   // R: 40 → 80
-          Math.round(120 + 70 * u),  // G: 120 → 190
-          Math.round(190 - 70 * u)   // B: 190 → 120
+          Math.round(25 + 15 * u),   // R: 25 → 40
+          Math.round(40 + 40 * u),   // G: 40 → 80
+          Math.round(60 - 20 * u)    // B: 60 → 40
         ];
       } else if (t < 0.75) { 
-        // Зелёный → янтарный
+        // Темный зеленый → темный оранжевый
         const u = (t - 0.5) / 0.25;
         return [
-          Math.round(80 + 120 * u),  // R: 80 → 200
-          Math.round(190 - 20 * u),  // G: 190 → 170
-          Math.round(120 - 60 * u)   // B: 120 → 60
+          Math.round(40 + 60 * u),   // R: 40 → 100
+          Math.round(80 - 10 * u),   // G: 80 → 70
+          Math.round(40 - 20 * u)    // B: 40 → 20
         ];
       } else { 
-        // Янтарный → красный
+        // Темный оранжевый → умеренно-красный
         const u = (t - 0.75) / 0.25;
         return [
-          Math.round(200 + 40 * u),  // R: 200 → 240
-          Math.round(170 - 90 * u),  // G: 170 → 80
-          Math.round(60 - 40 * u)    // B: 60 → 20
+          Math.round(100 + 60 * u),  // R: 100 → 160
+          Math.round(70 - 30 * u),   // G: 70 → 40
+          Math.round(20 - 10 * u)    // B: 20 → 10
         ];
       }
     };
@@ -225,6 +235,8 @@ export function initSDS(canvas, options = {}) {
 
   // ===== Шаг SDS =====
   function step(){
+    if (isPaused || !isAnimationRunning) return;
+
     const n = agents.length;
     winnersIdx.length = 0;
     let sum = 0; bestF = -Infinity;
@@ -279,6 +291,21 @@ export function initSDS(canvas, options = {}) {
     meanF = sum / n;
     winnersFrac = winnersIdx.length / n;
     t += 1;
+
+    // Обновление UI панели (если элементы существуют)
+    updateUIMetrics();
+  }
+
+  // ===== Обновление метрик в UI =====
+  function updateUIMetrics() {
+    // Обновляем таблицу в панели управления
+    const iterationEl = document.getElementById('iterationCount');
+    const bestFitnessEl = document.getElementById('bestFitness');
+    const winnersCountEl = document.getElementById('winnersCount');
+
+    if (iterationEl) iterationEl.textContent = t;
+    if (bestFitnessEl) bestFitnessEl.textContent = bestF.toFixed(4);
+    if (winnersCountEl) winnersCountEl.textContent = winnersIdx.length;
   }
 
   // ===== Отрисовка =====
@@ -290,8 +317,8 @@ export function initSDS(canvas, options = {}) {
 
     // траектории
     if (params.showTraj){
-      ctx.lineWidth = 1.25;
-      ctx.globalAlpha = 0.85;
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.7;
       ctx.strokeStyle = params.trail;
       for (let k=0;k<tracks.length;k++){
         const tr = tracks[k]; if (tr.length<2) continue;
@@ -311,40 +338,67 @@ export function initSDS(canvas, options = {}) {
       const a = agents[i];
       const p = worldToPix(a);
       ctx.beginPath();
-      ctx.arc(p.x, p.y, a.success? 2.3 : 1.7, 0, Math.PI*2);
+      ctx.arc(p.x, p.y, a.success? 2.8 : 2.2, 0, Math.PI*2);
       ctx.fillStyle = a.success ? params.colorWin : params.colorLose;
-      ctx.globalAlpha = a.success ? 0.96 : 0.86;
+      ctx.globalAlpha = a.success ? 0.95 : 0.8;
       ctx.fill();
       ctx.globalAlpha = 1.0;
     }
 
-    // метка глобального максимума
+    // метка глобального максимума (изменен цвет для лучшей видимости)
     if (params.showBest){
       const hint = Objectives[params.func].hint;
       if (hint){
         const p = worldToPix(hint);
-        ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI*2); ctx.strokeStyle = '#111827'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(p.x-8,p.y); ctx.lineTo(p.x+8,p.y); ctx.moveTo(p.x,p.y-8); ctx.lineTo(p.x,p.y+8); ctx.stroke();
+        ctx.beginPath(); 
+        ctx.arc(p.x, p.y, 6, 0, Math.PI*2); 
+        ctx.strokeStyle = '#f59e0b'; // яркий оранжевый цвет
+        ctx.lineWidth = 3; 
+        ctx.stroke();
+        ctx.beginPath(); 
+        ctx.moveTo(p.x-10,p.y); ctx.lineTo(p.x+10,p.y); 
+        ctx.moveTo(p.x,p.y-10); ctx.lineTo(p.x,p.y+10); 
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
       }
     }
-
-    // оверлей метрик
-    ctx.fillStyle = 'rgba(248,250,252,0.9)';
-    ctx.fillRect(8,8,220,70);
-    ctx.fillStyle = '#0f172a';
-    ctx.font = '12px ui-sans-serif, system-ui';
-    ctx.fillText(`t: ${t}`, 16, 26);
-    ctx.fillText(`winners: ${(winnersFrac*100).toFixed(1)}%`, 16, 42);
-    ctx.fillText(`best f: ${bestF.toFixed(4)}`, 16, 58);
-    ctx.fillText(`mean f: ${meanF.toFixed(4)}`, 116, 58);
   }
 
   // ===== Цикл =====
-  let raf = null;
   function loop(){
-    for (let k=0;k<params.stepsPerFrame;k++) step();
+    // Выполняем шаги алгоритма только если не на паузе
+    if (!isPaused && isAnimationRunning) {
+      for (let k=0;k<params.stepsPerFrame;k++) step();
+    }
     draw();
-    raf = requestAnimationFrame(loop);
+    if (isAnimationRunning) {
+      animationId = requestAnimationFrame(loop);
+    }
+  }
+
+  // ===== Функции управления анимацией =====
+  function startAnimation() {
+    if (!isAnimationRunning) {
+      isAnimationRunning = true;
+      isPaused = false;
+      loop();
+    }
+  }
+
+  function pauseAnimation() {
+    isPaused = true;
+    isAnimationRunning = false;
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+    // Рисуем один кадр в паузе
+    drawStaticFrame();
+  }
+
+  function drawStaticFrame() {
+    draw();
   }
 
   // ===== API =====
@@ -376,93 +430,345 @@ export function initSDS(canvas, options = {}) {
     }
   }
 
-  function stop(){ if (raf) cancelAnimationFrame(raf); window.removeEventListener('resize', onResize); }
+  // ===== Функции управления =====
+  function pause() {
+    isPaused = true;
+  }
+
+  function resume() {
+    isPaused = false;
+    if (!isAnimationRunning) {
+      startAnimation();
+    }
+  }
+
+  function togglePause() {
+    if (isPaused) {
+      resume();
+    } else {
+      pause();
+    }
+    return isPaused;
+  }
+
+  function reset() {
+    initAgents();
+    updateUIMetrics();
+  }
+
+  function stop(){ 
+    if (animationId) cancelAnimationFrame(animationId);
+    isAnimationRunning = false;
+    window.removeEventListener('resize', onResize); 
+  }
 
   function onResize(){ updateCanvasSize(); }
 
-  // ===== UI: панель управления в стиле вашего примера =====
-  function createControls(container){
-    const funcOptions = FUNC_KEYS.map(k=>`<option value="${k}">${Objectives[k].name}</option>`).join('');
-    const html = `
-    <div style="background:rgba(0,0,0,0.72);padding:10px;font:12px ui-sans-serif,system-ui;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;">
-      <label>Функция:<br>
-        <select id="func" style="width:180px;">${funcOptions}</select>
-      </label>
+  // ===== Инициализация всплывающих подсказок =====
+  async function initTooltips() {
+    const tooltipData = {
+      'func': {
+        title: 'Целевая функция $f$',
+        description: 'Оптимизируемая функция $f: \\mathcal{S} \\rightarrow \\mathbb{R}_+$ для максимизации на области поиска $\\mathcal{S}$.'
+      },
+      'N': {
+        title: 'Размер популяции $N$',
+        description: 'Количество агентов в популяции $N \\in \\mathbb{N}$. Больший размер улучшает исследование пространства поиска.'
+      },
+      'sigma': {
+        title: 'Дисперсия шума $\\sigma_0$',
+        description: 'Начальная дисперсия гауссовского шума для разведки $\\sigma_0 > 0$. Контролирует интенсивность исследования.'
+      },
+      'restartProb': {
+        title: 'Вероятность перезапуска $p_{\\text{restart}}$',
+        description: 'Доля агентов для случайного перезапуска при отсутствии успешных агентов $p_{\\text{restart}} \\in [0,1]$.'
+      },
+      'rho': {
+        title: 'Коэффициент затухания $\\rho$',
+        description: 'Мультипликативный коэффициент уменьшения дисперсии $\\rho \\in (0,1)$: $\\sigma^{(t)} = \\sigma_0 \\cdot \\rho^t$.'
+      },
+      'maxIterations': {
+        title: 'Бюджет итераций $T$',
+        description: 'Максимальное количество итераций алгоритма $T \\in \\mathbb{N}$ для ограничения времени выполнения.'
+      },
+      'seed': {
+        title: 'Seed (ГПСЧ)',
+        description: 'Начальное значение генератора псевдослучайных чисел для воспроизводимости результатов.'
+      },
+      'anneal': {
+        title: 'Адаптивное затухание',
+        description: 'Использование адаптивного уменьшения дисперсии со временем: $\\sigma^{(t)} = \\sigma_0 \\cdot \\rho^t$.'
+      }
+    };
 
-      <label>N:<br><span id="NVal">${params.N}</span>
-        <input type="range" id="N" min="50" max="1200" step="10" value="${params.N}" style="width:110px;">
-      </label>
+    // Создаем скрытые элементы для предрендеринга LaTeX
+    const hiddenContainer = document.createElement('div');
+    hiddenContainer.style.position = 'absolute';
+    hiddenContainer.style.left = '-9999px';
+    hiddenContainer.style.visibility = 'hidden';
+    document.body.appendChild(hiddenContainer);
 
-      <label>σ:<br><span id="sigmaVal">${params.sigma.toFixed(3)}</span>
-        <input type="range" id="sigma" min="0.005" max="0.2" step="0.005" value="${params.sigma}" style="width:110px;">
-      </label>
+    // Предрендериваем все формулы
+    for (const [key, data] of Object.entries(tooltipData)) {
+      const element = document.createElement('div');
+      element.innerHTML = `<strong>${data.title}</strong><br>${data.description}`;
+      hiddenContainer.appendChild(element);
+      tooltipElements[key] = element;
+    }
 
-      <label>steps/frame:<br><span id="spfVal">${params.stepsPerFrame}</span>
-        <input type="range" id="stepsPerFrame" min="1" max="20" step="1" value="${params.stepsPerFrame}" style="width:110px;">
-      </label>
+    // Рендерим LaTeX формулы
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      await window.MathJax.typesetPromise([hiddenContainer]);
+    }
 
-      <label>restart p:<br><span id="restartVal">${params.restartProb.toFixed(2)}</span>
-        <input type="range" id="restartProb" min="0" max="1" step="0.05" value="${params.restartProb}" style="width:110px;">
-      </label>
+    const tooltip = document.getElementById('tooltip');
+    const tooltipLabels = document.querySelectorAll('.tooltip-label');
 
-      <label>heat grid:<br><span id="gridVal">${params.heatGrid}</span>
-        <input type="range" id="heatGrid" min="80" max="400" step="10" value="${params.heatGrid}" style="width:110px;">
-      </label>
+    tooltipLabels.forEach(label => {
+      const tooltipKey = label.getAttribute('data-tooltip');
+      const element = tooltipElements[tooltipKey];
+      
+      if (element) {
+        label.addEventListener('mouseenter', (e) => {
+          tooltip.innerHTML = element.innerHTML;
+          tooltip.style.display = 'block';
+          
+          const rect = label.getBoundingClientRect();
+          tooltip.style.left = (rect.right + 10) + 'px';
+          tooltip.style.top = rect.top + 'px';
+        });
 
-      <label>Seed:<br>
-        <input type="number" id="seed" value="${params.seed}" style="width:120px;">
-      </label>
+        label.addEventListener('mouseleave', () => {
+          tooltip.style.display = 'none';
+        });
 
-      <button id="randSeed" style="padding:5px 10px;background:#222;border:1px solid #555;color:#eee;border-radius:5px;cursor:pointer;">Random</button>
+        label.addEventListener('mousemove', (e) => {
+          tooltip.style.left = (e.clientX + 10) + 'px';
+          tooltip.style.top = (e.clientY - 10) + 'px';
+        });
+      }
+    });
+  }
 
-      <label class="tgl"><input type="checkbox" id="showHeatmap" ${params.showHeatmap?'checked':''}> Heatmap</label>
-      <label class="tgl"><input type="checkbox" id="showTraj" ${params.showTraj?'checked':''}> Traj</label>
-      <label class="tgl"><input type="checkbox" id="showBest" ${params.showBest?'checked':''}> Max mark</label>
+  // ===== Функция для получения текущих метрик =====
+  function getMetrics() {
+    return {
+      t: t,
+      bestF: bestF,
+      meanF: meanF,
+      winnersFrac: winnersFrac,
+      winnersCount: winnersIdx.length,
+      totalAgents: agents.length,
+      isPaused: isPaused
+    };
+  }
 
-      <label class="tgl"><input type="checkbox" id="anneal" ${params.anneal?'checked':''}> Anneal</label>
-      <label>decay:<br><span id="decayVal">${params.annealDecay.toFixed(4)}</span>
-        <input type="range" id="annealDecay" min="0.95" max="0.9999" step="0.0005" value="${params.annealDecay}" style="width:110px;">
-      </label>
-    </div>`;
+  function createUI() {
+    if (params.isPreview) {
+      // Для превью рисуем статичный кадр после небольшой задержки, 
+      // чтобы убедиться что canvas готов
+      setTimeout(() => {
+        drawStaticFrame();
+      }, 10);
+      
+      return { 
+        params, 
+        updateParams, 
+        updateParam, 
+        getMetrics, 
+        startAnimation, 
+        pauseAnimation,
+        drawStaticFrame
+      };
+    }
 
-    container.innerHTML = html;
-    container.querySelector('#func').value = params.func;
+    // Инициализация всплывающих подсказок
+    setTimeout(() => {
+      initTooltips();
+    }, 1000); // Даём время MathJax для загрузки
 
-    const bind = (id, handler)=>{
-      const el = container.querySelector('#'+id);
-      const lab = container.querySelector('#'+id+'Val');
-      el.addEventListener('input', ()=>{
-        let v = el.value;
-        if (id==='N' || id==='heatGrid' || id==='stepsPerFrame') v = parseInt(v);
-        else if (id==='seed') v = parseInt(v);
-        else if (id==='restartProb' || id==='sigma' || id==='annealDecay') v = parseFloat(v);
-        handler(v);
-        if (lab) lab.textContent = (typeof v==='number' && !Number.isNaN(v)) ? (id==='sigma'? v.toFixed(3) : id==='restartProb'? v.toFixed(2) : id==='annealDecay'? v.toFixed(4) : v) : el.value;
+    const controlPanel = document.getElementById('controlPanel');
+    const toggleBtn = document.getElementById('toggleBtn');
+    
+    // Панель изначально свёрнута
+    let isCollapsed = true;
+    toggleBtn.textContent = '☰';
+    
+    // Сворачивание/разворачивание панели
+    toggleBtn.addEventListener('click', () => {
+      isCollapsed = !isCollapsed;
+      controlPanel.classList.toggle('collapsed', isCollapsed);
+      toggleBtn.textContent = isCollapsed ? '☰' : '←';
+    });
+
+    // Состояние интерфейса
+    let isAdvancedExpanded = false;
+    let maxIterations = 1000;
+
+    // Названия функций из теории
+    const functionNames = {
+      'twopeaks': 'Две горки',
+      'sphere': 'Сфера',
+      'rastrigin': 'Растригин',
+      'ackley': 'Акли'
+    };
+
+    // Кнопки управления
+    const pauseBtn = document.getElementById('pauseBtn');
+    pauseBtn.addEventListener('click', () => {
+      const isPausedNow = togglePause();
+      pauseBtn.textContent = isPausedNow ? 'Старт' : 'Пауза';
+      pauseBtn.classList.toggle('active', !isPausedNow);
+      // Сбрасываем активных агентов при паузе
+      if (isPausedNow) {
+        document.getElementById('winnersCount').textContent = '0';
+      }
+    });
+
+    // Кнопка генерации нового сида
+    document.getElementById('newSeedBtn').addEventListener('click', () => {
+      reset();
+      const newSeed = Math.floor(Math.random() * 1000000000);
+      updateParam('seed', newSeed);
+      document.getElementById('seed').value = newSeed;
+      // Сбрасываем все метрики при генерации нового сида
+      document.getElementById('iterationCount').textContent = '0';
+      document.getElementById('bestFitness').textContent = '0.0000';
+      document.getElementById('winnersCount').textContent = '0';
+    });
+
+    // Кнопка тепловой карты
+    const heatmapBtn = document.getElementById('showHeatmapBtn');
+    heatmapBtn.classList.toggle('active', params.showHeatmap);
+    heatmapBtn.addEventListener('click', () => {
+      const newState = !params.showHeatmap;
+      updateParam('showHeatmap', newState);
+      heatmapBtn.classList.toggle('active', newState);
+      heatmapBtn.textContent = newState ? 'Тепло ВКЛ' : 'Тепло ВЫКЛ';
+    });
+
+    // Кнопка траекторий
+    const trajBtn = document.getElementById('showTrajBtn');
+    trajBtn.classList.toggle('active', params.showTraj);
+    trajBtn.addEventListener('click', () => {
+      const newState = !params.showTraj;
+      updateParam('showTraj', newState);
+      trajBtn.classList.toggle('active', newState);
+      trajBtn.textContent = newState ? 'След ВКЛ' : 'След ВЫКЛ';
+    });
+
+    // Кнопка отображения максимума
+    const bestBtn = document.getElementById('showBestBtn');
+    bestBtn.classList.toggle('active', params.showBest);
+    bestBtn.addEventListener('click', () => {
+      const newState = !params.showBest;
+      updateParam('showBest', newState);
+      bestBtn.classList.toggle('active', newState);
+      bestBtn.textContent = newState ? 'Макс ВКЛ' : 'Макс ВЫКЛ';
+    });
+
+    // Кнопка выбора функции
+    const funcBtn = document.getElementById('funcBtn');
+    const funcKeys = Object.keys(functionNames);
+    let funcIndex = funcKeys.indexOf(params.func);
+    funcBtn.textContent = functionNames[params.func];
+    funcBtn.addEventListener('click', () => {
+      funcIndex = (funcIndex + 1) % funcKeys.length;
+      const newFunc = funcKeys[funcIndex];
+      updateParam('func', newFunc);
+      funcBtn.textContent = functionNames[newFunc];
+      updateDisplay();
+    });
+
+    // Расширенные настройки
+    document.getElementById('advancedBtn').addEventListener('click', () => {
+      isAdvancedExpanded = !isAdvancedExpanded;
+      const advancedControls = document.getElementById('advancedControls');
+      const advancedBtn = document.getElementById('advancedBtn');
+      
+      if (isAdvancedExpanded) {
+        advancedControls.style.display = 'block';
+        advancedBtn.textContent = 'Скрыть расширенные настройки';
+      } else {
+        advancedControls.style.display = 'none';
+        advancedBtn.textContent = 'Расширенные настройки';
+      }
+    });
+
+    // Кнопка адаптивного затухания
+    const annealBtn = document.getElementById('annealBtn');
+    annealBtn.classList.toggle('active', params.anneal);
+    annealBtn.textContent = params.anneal ? 'вкл' : 'выкл';
+    annealBtn.addEventListener('click', () => {
+      const newState = !params.anneal;
+      updateParam('anneal', newState);
+      annealBtn.classList.toggle('active', newState);
+      annealBtn.textContent = newState ? 'вкл' : 'выкл';
+    });
+
+    // Функция для привязки слайдеров
+    function bindSlider(id, callback) {
+      const slider = document.getElementById(id);
+      const valueDisplay = document.getElementById(id + 'Val');
+      
+      slider.addEventListener('input', () => {
+        const value = parseFloat(slider.value);
+        callback(value);
+        
+        // Обновление отображения значения
+        if (valueDisplay) {
+          if (id === 'populationSize' || id === 'maxIterations') {
+            valueDisplay.textContent = Math.round(value).toString();
+          } else if (id === 'sigma') {
+            valueDisplay.textContent = value.toFixed(2);
+          } else if (id === 'restartProb') {
+            valueDisplay.textContent = value.toFixed(2);
+          } else if (id === 'annealDecay') {
+            valueDisplay.textContent = value.toFixed(3);
+          } else {
+            valueDisplay.textContent = value.toString();
+          }
+        }
       });
-    };
+    }
 
-    bind('func', v=> updateParam('func', v));
-    bind('N', v=> updateParam('N', v));
-    bind('sigma', v=> updateParam('sigma', v));
-    bind('stepsPerFrame', v=> updateParam('stepsPerFrame', v));
-    bind('restartProb', v=> updateParam('restartProb', v));
-    bind('heatGrid', v=> updateParam('heatGrid', v));
-    bind('annealDecay', v=> updateParam('annealDecay', v));
+    // Привязка всех слайдеров
+    bindSlider('populationSize', (v) => updateParam('N', parseInt(v)));
+    bindSlider('sigma', (v) => updateParam('sigma', v));
+    bindSlider('restartProb', (v) => updateParam('restartProb', v));
+    bindSlider('annealDecay', (v) => updateParam('annealDecay', v));
+    bindSlider('maxIterations', (v) => {
+      maxIterations = parseInt(v);
+      return parseInt(v);
+    });
 
-    const seedInput = container.querySelector('#seed');
-    seedInput.addEventListener('change', ()=> updateParam('seed', parseInt(seedInput.value||'0')) );
+    // Текстовое поле seed
+    document.getElementById('seed').addEventListener('change', (e) => {
+      updateParam('seed', parseInt(e.target.value) || 123456789);
+      updateDisplay();
+    });
 
-    const randBtn = container.querySelector('#randSeed');
-    randBtn.addEventListener('click', ()=>{ updateParam('seed', (Math.random()*2**31)|0); seedInput.value = params.seed; });
+    function updateDisplay() {
+      const metrics = getMetrics();
+      document.getElementById('iterationCount').textContent = metrics.t;
+      document.getElementById('bestFitness').textContent = metrics.bestF.toFixed(4);
+      document.getElementById('winnersCount').textContent = metrics.winnersCount;
+    }
 
-    const chk = (id,key)=>{
-      const el = container.querySelector('#'+id);
-      el.addEventListener('change', ()=>{ updateParam(key, !!el.checked); });
-    };
-    chk('showHeatmap','showHeatmap');
-    chk('showTraj','showTraj');
-    chk('showBest','showBest');
-    chk('anneal','anneal');
+    // Обновление метрик в реальном времени
+    function updateMetrics() {
+      updateDisplay();
+      requestAnimationFrame(updateMetrics);
+    }
+
+    // Инициализация значений
+    updateDisplay();
+    
+    // Скрытие расширенных настроек по умолчанию
+    document.getElementById('advancedControls').style.display = 'none';
+
+    startAnimation();
+    updateMetrics();
   }
 
   // ===== Публичный интерфейс =====
@@ -471,7 +777,27 @@ export function initSDS(canvas, options = {}) {
   initAgents();
   renderHeatmap();
   window.addEventListener('resize', onResize);
-  loop();
+  
+  // Запускаем анимацию если не указан стартовый режим паузы
+  if (!isPaused) {
+    startAnimation();
+  } else {
+    drawStaticFrame();
+  }
 
-  return { params, updateParams, updateParam, createControls, stop };
+  return { 
+    params, 
+    updateParams, 
+    updateParam, 
+    createUI,
+    getMetrics, 
+    pause,
+    resume,
+    togglePause,
+    reset,
+    stop,
+    startAnimation,
+    pauseAnimation,
+    drawStaticFrame
+  };
 }

@@ -192,7 +192,7 @@
 <p>где $S_k$ — множество ребер (дуг $(i, j) \in S_k$), использованных в решении муравья $k$ на итерации $t$; $L_k(t)$ — длина или же стоимость решения, найденного агентом; $Q>0$ — константа, определяющая общую интенсивность подкрепления (откладываемых феромонов). Обратная зависимость от длины пути обеспечивает, что более оптимальные (короткие) пути получают больше феромонов. Общий вид алгоритмов приведен ниже.</p>
 <div class="algorithm">
 <div class="algorithm-title">Алгоритм: Муравьиная колония на графе $G=(V,E,w)$</div>
-<div class="algorithm-input"><strong>Вход:</strong> $\alpha,\beta\ge 0$;\ $\rho\in(0,1]$;\ $Q>0$;\ $m,T\in\mathbb{N</div>
+<div class="algorithm-input"><strong>Вход:</strong> $\alpha,\beta\ge 0$; $\rho\in(0,1]$; $Q>0$; $m,T \in \mathbb N $; $\tau _0>0$</div>
 <div class="algorithm-output"><strong>Выход:</strong> $(S_\star,L_\star)$</div>
 <div class="algorithm-init"><strong>Инициализация:</strong> $\tau_{\{i,j\}}(0)\leftarrow \tau_{0} \ \ \forall \{i,j\}\in E$; $(S_\star,L_\star)\leftarrow(\emptyset,+\infty)$.</div>
 <div class="algorithm-for"><strong>для</strong> $t=0,1,\dots,T-1$ <strong>делать</strong></div>
