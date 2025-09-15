@@ -83,7 +83,7 @@ export function initSDS(canvas, options = {}) {
   // ===== Параметры =====
   const params = {
     // Популяция и стохастика
-    N: options.N ?? 300,
+    N: options.N ?? 100,
     seed: options.seed ?? 123456789,
 
     // Поиск

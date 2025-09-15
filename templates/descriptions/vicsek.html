@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Модель Вичека</title>
+    
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                tags: 'ams',
+                tagSide: 'right',
+                processEscapes: true,
+                processEnvironments: true
+            },
+            svg: {
+                fontCache: 'global'
+            },
+            startup: {
+                ready: () => {
+                    console.log('MathJax готов');
+                    MathJax.startup.defaultReady();
+                    MathJax.startup.promise.then(() => {
+                        showContent();
+                    });
+                }
+            }
+        };
+    </script>
+    
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    
+    <style>
+        body {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: white;
+            background-color: #111;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        
+        .equation {
+            margin: 20px 0;
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .algorithm {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #444;
+            background-color: #1a1a1a;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            border-radius: 5px;
+        }
+        
+        .algorithm-title {
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #fff;
+            font-family: 'Times New Roman', Times, serif;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        .algorithm-input, .algorithm-output, .algorithm-init {
+            margin: 10px 0;
+            padding: 8px 0;
+            color: #ccc;
+            border-bottom: 1px solid #333;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        
+        .algorithm-for, .algorithm-while, .algorithm-foreach, .algorithm-return, 
+        .algorithm-if, .algorithm-else {
+            margin: 5px 0;
+            color: #fff;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+        
+        .algorithm-line {
+            margin: 3px 0;
+            color: #ddd;
+            line-height: 1.4;
+        }
+        
+        .algorithm-comment {
+            margin: 3px 0;
+            color: #888;
+            font-style: italic;
+            line-height: 1.4;
+        }
+        
+        .algorithm mjx-container {
+			font-family: 'Times New Roman', Times, serif !important;
+			font-size: 1em !important;
+			color: #fff !important;
+		}
+		.algorithm-math {
+			display: inline-block;
+			margin: 2px 0;
+		}
+		.algorithm-math div {
+			text-align: center;
+		}
+
+        .algorithm mjx-container[display="true"] {
+            display: block !important;
+            margin: 0.5em 0 !important;
+            text-align: left !important;
+        }
+        
+        .algorithm mjx-container svg {
+            vertical-align: baseline !important;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        p {
+            text-align: justify;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 50px;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #666;
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+		.references {
+			border-top: none;   /* убираем верхнюю линию у блока */
+			border-bottom: none; /* убираем нижнюю */
+			margin-top: 0.5em;
+		}
+
+		.references ol {
+			margin: 0;
+			padding-left: 20px;
+		}
+
+		hr {
+			border: none;
+			border-top: 1px solid #444; /* более мягкий серый */
+			margin: 1em 0;
+		}
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+        Загрузка математических формул...
+    </div>
+    
+    <div id="content" style="display: none;">
+        <h1>Модель Вичека</h1>
+        <p>Рассматривается классическая дискретная по времени модель коллективного перемещения самодвижущихся частиц (модель Вичека), движение в которой каждой реализуется с постоянной по модулю скоростью и изменением направления для каждого шага на среднее по окрестности с добавлением некоторого значения аддитивного шума. Частицы являются точечными, пространственная область — квадрат $L\times L$ с периодическими граничными условиями. Взаимодействие является локальным и носит метрический характер: соседями считаются все частицы в круге радиуса $r$ вокруг текущей позиции. Эта минимальная постановка позволяет зафиксировать ключевую конкуренцию между выравниванием и шумом, а также приводит к кинетическому фазовому переходу между беспорядком и упорядоченным коллективным движением при изменении амплитуды шума или плотности $\rho=N/L^2$ [1].</p>
+<p>Состояние частицы $i=1,\dots,N$ на шаге $n\in\mathbb N$ задаётся парой $(x_i^n,\theta_i^n)$, где позиция $x_i^n\in\mathbb R^2$, а скорость имеет фиксированный модуль $v_0>0$ и направление $\theta _i^n$</p>
+<div class="equation">$${i}^n={0}\bigl(\cos \theta _i^{n},\ \sin\theta _i^{n}\bigr). \tag{1}$$</div>
+<p>Величины радиуса взаимодействия $r>0$, амплитуды шума $\eta\ge 0$, скорости $v_0$, шага по времени $\Delta t>0$ и размера $L$ являются параметрами модели. В данном контексте удобно оперировать также безразмерной длиной шага $\nu=v_0\Delta t$. Обновление выполняется синхронно: сначала вычисляются новые направления $\theta_i^{n+1}$ на основе конфигурации на шаге $n$, затем позиции $x_i^{n+1}$. Пусть $\mathcal N_i^n=\{\,j:\ \|x_j^n-x_i^n\|\le r\,\}$ — метрическое окружение частицы $i$ на шаге $n$. Тогда среднее направление по соседям определяется через аргумент векторной суммы единичных направляющих</p>
+<div class="equation">$$\bar\theta _i^{n}=\operatorname{Arg}\!\left(\sum_{j\in\mathcal {i}^n}e^{\mathrm i\theta _j^{n}}\right). \tag{2}$$</div>
+<p>Новая ориентация — сумма среднего и случайной угловой добавки $\Delta\theta_i^n$, равномерной на отрезке $[-\eta/2,\eta/2]$,</p>
+<div class="equation">$$\theta _i^{n+1}=\bar\theta _i^{n}+\Delta\theta _i^{n},\qquad \Delta\theta _i^{n}\sim\mathcal U\!\left[-\tfrac{\eta}{2},\,\tfrac{\eta}{2}\right]. \tag{3}$$</div>
+<p>Позиции затем сдвигаются на шаг вдоль нового направления</p>
+<div class="equation">$${i}^{n+1}={i}^n+{0}\bigl(\cos\theta _i^{n+1},\ \sin\theta _i^{n+1}\bigr)\,\Delta t, \tag{4}$$</div>
+<p>а переход через границы реализуется периодизацией по сторонам квадрата (тор). Именно такая схема (средний азимут + равномерный угловой шум при фиксированной скорости) приводится в оригинальной работе [1], где в качестве единиц выбраны $r\equiv 1$ и $\Delta t\equiv 1$, так что $\nu=v_0$ есть безразмерная длина шага, а плотность $\rho$ и амплитуда шума $\eta$ служат основными управляющими параметрами. Рассматриваемый механизм интуитивно прост: каждая частица берёт курс на среднее направление ближайших, но слегка промахивается из-за шума, где при малом шуме локальные кластеры сливаются в глобально согласованное движение, при большом — направления разрушаются и остаются беспорядочными [1].</p>
+<p>Глобальная упорядоченность измеряется нормированной средней скоростью (параметром порядка)</p>
+<div class="equation">$$\Phi^{n}=\frac{1}{N{0}}\left\|\sum_{i=1}^N {i}^n\right\|\in[0,1],\qquad \Phi=\langle \Phi^{n}\rangle_{n\gg 1}. \tag{5}$$</div>
+<p>При высоком шуме $\Phi\approx 0$ направления взаимно гасят друг друга, при низком — $\Phi$ становится строго положительной и в термодинамическом пределе стремится к величине порядка единицы. В оригинальной работе показано, что для фиксированных $\rho$ и $\nu$ существует критическое $\eta_c=\eta_c(\rho,\nu)$, при переходе через которое $\Phi$ обнуляется [1]. В численных экспериментах наблюдается непрерывное исчезновение порядка $\Phi\sim(\eta_c-\eta)^\beta$ с показателем $\beta\simeq 0{,}45$ для конечных систем, а сама перестройка носит кинетический, неравновесный характер — в отличие от модельной XY-ферромагнитной системы здесь сохраняется постоянная скорость частиц и отсутствует сохранение импульса взаимодействующих «спинов» [1].</p>
+<p>С точки зрения вычислительной реализации один шаг алгоритма сводится к двум операциям: (i) поиску соседей в радиусе $r$ и вычислению аргумента суммы направляющих (переориентация) и (ii) сдвигу на фиксированную длину $\nu$ по новому курсу (перемещение) с последующей периодизацией по границам. При наивном поиске соседей сложность шага $O(N^2)$, что приемлемо для умеренных $N$. Стандартные же пространственные индексы (решетка, k-d-деревья) позволяют уменьшить константу и асимптотику без изменения модели. Роль шума является принципиальной: равномерная добавка к углу — внутренний или угловой шум — была исходным выбором [1]. Уже позднее изучались иные реализации (например, векторный шум до нормировки суммы направляющих), влияющие на характер перехода в больших системах [2].</p>
+        
+<hr>
+<div class="references">
+  <ol><li>Vicsek, T., Czirók, A., Ben-Jacob, E., Cohen, I., & Shochet, O. (1995). Novel Type of Phase Transition in a System of Self-Driven Particles. Phys. Rev. Lett., 75(6), 1226–1229. https://doi.org/10.1103/PhysRevLett.75.1226</li><li>Grégoire G, Chaté H. Onset of collective and cohesive motion. Phys Rev Lett. 2004 Jan 16;92(2):025702. doi: 10.1103/PhysRevLett.92.025702. Epub 2004 Jan 15. PMID: 14753946.</li></ol>
+</div>
+    </div>
+
+    <script>
+        function showContent() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+            console.log('Контент отображен');
+        }
+
+        function waitForMathJax() {
+            if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+                window.MathJax.startup.promise.then(() => {
+                    console.log('MathJax загружен');
+                    showContent();
+                }).catch((err) => {
+                    console.log('Ошибка MathJax:', err);
+                    showContent();
+                });
+            } else {
+                setTimeout(waitForMathJax, 100);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                if (document.getElementById('loading').style.display !== 'none') {
+                    showContent();
+                }
+            }, 5000);
+            
+            waitForMathJax();
+        });
+    </script>
+</body>
+</html>

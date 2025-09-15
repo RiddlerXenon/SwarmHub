@@ -41,14 +41,20 @@ func main() {
 func ConvertLatexToHTML(latex, title string) (string, error) {
 	content := extractDocumentContent(latex)
 
+	// СНАЧАЛА обрабатываем пользовательские команды (до всего остального!)
+	content = processCustomCommands(content)
+
 	// Обрабатываем алгоритмы БЕЗ источников
 	content = processAlgorithmsAdvanced(content)
 
-	// СНАЧАЛА извлекаем ссылки из всего документа
+	// ЗАТЕМ извлекаем ссылки из всего документа
 	references := extractReferences(content)
 
 	// ЗАТЕМ очищаем контент от ссылок
 	content = cleanupReferences(content)
+
+	// Обрабатываем горизонтальную линию
+	content = processHorizontalRule(content)
 
 	// Обрабатываем формулы с нумерацией
 	content = processEquationsWithNumbering(content)
@@ -60,6 +66,42 @@ func ConvertLatexToHTML(latex, title string) (string, error) {
 
 	html := generateHTML(content, references, title)
 	return html, nil
+}
+
+// processCustomCommands обрабатывает пользовательские команды
+func processCustomCommands(content string) string {
+	// Ищем определения команд вида \newcommand{\1}{\mathds{1}}
+	newCommandRe := regexp.MustCompile(`\\newcommand\{\\(\w+)\}\{([^}]+)\}`)
+
+	commands := make(map[string]string)
+
+	// Извлекаем все пользовательские команды
+	matches := newCommandRe.FindAllStringSubmatch(content, -1)
+	for _, match := range matches {
+		commandName := match[1]
+		commandValue := match[2]
+		commands[commandName] = commandValue
+	}
+
+	// Удаляем определения команд из контента
+	content = newCommandRe.ReplaceAllString(content, "")
+
+	// Заменяем использования команд
+	for cmdName, cmdValue := range commands {
+		// Экранируем специальные символы для регулярного выражения
+		escapedName := regexp.QuoteMeta(cmdName)
+		cmdRe := regexp.MustCompile(`\\` + escapedName + `\b`)
+		content = cmdRe.ReplaceAllString(content, cmdValue)
+	}
+
+	return content
+}
+
+// processHorizontalRule обрабатывает горизонтальную линию
+func processHorizontalRule(content string) string {
+	// Заменяем \noindent\hrulefill на пустую строку (линия будет добавлена автоматически перед источниками)
+	content = regexp.MustCompile(`\\noindent\\hrulefill\s*`).ReplaceAllString(content, "")
+	return content
 }
 
 // extractDocumentContent извлекает содержимое между \begin{document} и \end{document}
@@ -253,14 +295,25 @@ func processAlgorithmsAdvanced(content string) string {
 				continue
 			}
 
-			// Обрабатываем return
-			if strings.Contains(line, "\\KwRet") {
-				kwretRe := regexp.MustCompile(`\\KwRet\{([^}]+)\}`)
-				if matches := kwretRe.FindStringSubmatch(line); len(matches) > 1 {
+			// Обрабатываем If-Then-Else конструкции
+			if strings.Contains(line, "\\If") {
+				ifRe := regexp.MustCompile(`\\If\{([^}]+)\}\{`)
+				if matches := ifRe.FindStringSubmatch(line); len(matches) > 1 {
 					indent := strings.Repeat("&nbsp;&nbsp;&nbsp;&nbsp;", indentLevel)
-					ret := processInlineMathForAlgorithm(matches[1])
-					result = append(result, `<div class="algorithm-return">`+indent+`<strong>вернуть</strong> `+ret+`</div>`)
+					condition := processInlineMathForAlgorithm(matches[1])
+					result = append(result, `<div class="algorithm-if">`+indent+`<strong>если</strong> `+condition+` <strong>то</strong></div>`)
+					indentLevel++
 				}
+				continue
+			}
+
+			if strings.Contains(line, "\\Else") {
+				if indentLevel > 0 {
+					indentLevel--
+				}
+				indent := strings.Repeat("&nbsp;&nbsp;&nbsp;&nbsp;", indentLevel)
+				result = append(result, `<div class="algorithm-else">`+indent+`<strong>иначе</strong></div>`)
+				indentLevel++
 				continue
 			}
 
@@ -300,12 +353,12 @@ func processInlineMathForAlgorithm(text string) string {
 
 	// Если уже есть $ или \(, оставляем как есть
 	if strings.Contains(text, "$") || strings.Contains(text, "\\(") {
-		return cleanMathSyntax(text)
+		return cleanMathSyntaxSafely(text)
 	}
 
 	// Если содержит математические символы, оборачиваем в $...$
 	if containsMathSymbols(text) {
-		cleanText := cleanMathSyntax(text)
+		cleanText := cleanMathSyntaxSafely(text)
 		return "$" + cleanText + "$"
 	}
 
@@ -358,29 +411,31 @@ func convertMathInText(text string) string {
 
 	// Если уже есть $...$, оставляем и чистим синтаксис
 	if strings.Contains(text, "$") {
-		return cleanMathSyntax(text)
+		return cleanMathSyntaxSafely(text)
 	}
 
 	// Если это явно математика, оборачиваем в $
 	if containsMathSymbols(text) {
-		cleanText := cleanMathSyntax(text)
+		cleanText := cleanMathSyntaxSafely(text)
 		return "$" + cleanText + "$"
 	}
 
 	return text
 }
 
-// cleanMathSyntax очищает математический синтаксис
-func cleanMathSyntax(math string) string {
+// cleanMathSyntaxSafely - ИСПРАВЛЕННАЯ ВЕРСИЯ безопасной очистки математического синтаксиса
+func cleanMathSyntaxSafely(math string) string {
 	// Исправляем фигурные скобки
 	math = strings.ReplaceAll(math, "\\left\\{", "\\{")
 	math = strings.ReplaceAll(math, "\\right\\}", "\\}")
 
-	// Исправляем индексы
-	math = regexp.MustCompile(`([a-zA-Z])_([a-zA-Z0-9]+)([^{]|$)`).ReplaceAllString(math, `$1_{$2}$3`)
+	// ОСТОРОЖНАЯ обработка индексов - только если нет фигурных скобок
+	// Проверяем одиночные символы после _ без фигурных скобок
+	math = regexp.MustCompile(`([a-zA-Z])_([a-zA-Z0-9])(\s|[^a-zA-Z0-9_{]|$)`).ReplaceAllString(math, `$1_{$2}$3`)
 
-	// Исправляем степени
-	math = regexp.MustCompile(`([a-zA-Z])\^([a-zA-Z0-9]+)([^{]|$)`).ReplaceAllString(math, `$1^{$2}$3`)
+	// ОСТОРОЖНАЯ обработка степеней - только если нет фигурных скобок  
+	// Проверяем одиночные символы после ^ без фигурных скобок
+	math = regexp.MustCompile(`([a-zA-Z])\^([a-zA-Z0-9])(\s|[^a-zA-Z0-9^{]|$)`).ReplaceAllString(math, `$1^{$2}$3`)
 
 	// Исправляем команды LaTeX
 	math = strings.ReplaceAll(math, "\\gets", "\\leftarrow")
@@ -399,12 +454,14 @@ func cleanMathSyntax(math string) string {
 // containsMathSymbols проверяет наличие математических символов
 func containsMathSymbols(text string) bool {
 	mathPatterns := []string{
-		"\\alpha", "\\beta", "\\gamma", "\\delta", "\\tau", "\\rho",
-		"\\mathbb", "\\in", "\\cup", "\\leftarrow", "\\gets", "\\emptyset",
+		"\\alpha", "\\beta", "\\gamma", "\\delta", "\\tau", "\\rho", "\\theta",
+		"\\mathbb", "\\mathds", "\\mathcal", "\\in", "\\cup", "\\leftarrow", "\\gets", "\\emptyset",
 		"\\infty", "\\ge", "\\le", "\\ne", "_", "^", "\\sum",
 		"\\frac", "\\cdot", "\\times", "\\subset", "\\forall",
 		"\\varnothing", "\\arg", "\\min", "\\max", "\\neq",
 		"\\{", "\\}", "\\cap", "\\setminus", "\\bigl", "\\bigr",
+		"\\sim", "\\propto", "\\approx", "\\subseteq", "\\operatorname",
+		"\\|", "\\dots", "\\ldots", "\\mathrm", "\\tfrac",
 	}
 
 	for _, pattern := range mathPatterns {
@@ -426,7 +483,7 @@ func processEquationsWithNumbering(content string) string {
 		inner = strings.TrimSpace(inner)
 
 		inner = processCasesInEquation(inner)
-		inner = cleanMathSyntax(inner)
+		inner = cleanMathSyntaxSafely(inner)
 
 		result := fmt.Sprintf("\n<div class=\"equation\">$$%s \\tag{%d}$$</div>\n", inner, equationCounter)
 		equationCounter++
@@ -455,15 +512,15 @@ func processCasesInEquation(equation string) string {
 			parts := strings.Split(line, "&")
 			if len(parts) >= 2 {
 				value := strings.TrimSpace(parts[0])
-				value = cleanMathSyntax(value)
+				value = cleanMathSyntaxSafely(value)
 
 				condition := strings.TrimSpace(parts[1])
-				condition = cleanMathSyntax(condition)
+				condition = cleanMathSyntaxSafely(condition)
 
 				processedLine := value + " & " + condition
 				processedLines = append(processedLines, processedLine)
 			} else {
-				cleanLine := cleanMathSyntax(line)
+				cleanLine := cleanMathSyntaxSafely(line)
 				processedLines = append(processedLines, cleanLine)
 			}
 		}
@@ -646,7 +703,8 @@ func generateHTML(content string, references []string, title string) string {
             font-family: 'Times New Roman', Times, serif;
         }
         
-        .algorithm-for, .algorithm-while, .algorithm-foreach, .algorithm-return {
+        .algorithm-for, .algorithm-while, .algorithm-foreach, .algorithm-return, 
+        .algorithm-if, .algorithm-else {
             margin: 5px 0;
             color: #fff;
             font-weight: bold;

@@ -2,9 +2,119 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Главная страница</title>
+  <title>SwarmHub - Роевые алгоритмы</title>
   <link rel="stylesheet" href="../static/css/styles.css">
   <style>
+    /* Стили для заголовка и описания проекта */
+    .project-header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding: 30px 20px;
+      background: linear-gradient(135deg, #111 0%, #222 100%);
+      border-radius: 15px;
+      border: 2px solid #333;
+    }
+
+    .project-title {
+      font-size: 48px;
+      font-weight: bold;
+      color: #3ddc84;
+      margin-bottom: 15px;
+      text-shadow: 0 2px 10px rgba(61, 220, 132, 0.3);
+    }
+
+    .project-subtitle {
+      font-size: 18px;
+      color: #cccccc;
+      margin-bottom: 25px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+    }
+
+    .project-info {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 30px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .project-links {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .github-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #3ddc84;
+      text-decoration: none;
+      padding: 8px 15px;
+      border: 2px solid #3ddc84;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      font-weight: bold;
+    }
+
+    .github-link:hover {
+      background: #3ddc84;
+      color: #111;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(61, 220, 132, 0.3);
+    }
+
+    .university-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #cccccc;
+      font-size: 14px;
+    }
+
+    .university-logo {
+      height: 40px;
+      width: auto;
+      border-radius: 5px;
+    }
+
+    .divider {
+      height: 30px;
+      width: 1px;
+      background: #444;
+    }
+
+    /* Стили для footer */
+    .project-footer {
+      text-align: center;
+      margin-top: 50px;
+      padding: 20px;
+      color: #666;
+      font-size: 12px;
+      border-top: 1px solid #333;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+      .project-title {
+        font-size: 36px;
+      }
+      
+      .project-info {
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .divider {
+        width: 100%;
+        height: 1px;
+      }
+    }
+
     .card canvas {
       transition: opacity 0.3s ease;
     }
@@ -16,26 +126,110 @@
     .card canvas:not(:hover) {
       opacity: 0.8;
     }
+
+    .card .desc {
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      font-size: 13px;
+      line-height: 1.4;
+      overflow: visible;
+      word-wrap: break-word;
+    }
+
+    .card .desc .title {
+      text-align: center;
+      font-weight: bold;
+      font-size: 18px;
+      color: #3ddc84;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-top: 40px;
+    }
+
+    .card .desc .description {
+      text-align: justify;
+      color: #cccccc;
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      padding: 30px;
+      padding-top: 20px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Карточка 1 с превью -->
+    <!-- Заголовок проекта -->
+    <div class="project-header">
+      <h1 class="project-title">SwarmHub</h1>
+      <p class="project-subtitle">
+        Интерактивная платформа для изучения и визуализации роевых алгоритмов. 
+        Исследуйте коллективное поведение, оптимизацию и самоорганизацию через 
+        интерактивные симуляции с настраиваемыми параметрами.
+      </p>
+      
+      <div class="project-info">
+        <div class="project-links">
+          <a href="https://github.com/RiddlerXenon/roi" class="github-link" target="_blank">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            @RiddlerXenon/roi
+          </a>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="university-info">
+          <img src="https://kursksu.ru/images/logoH.png" alt="КГУ" class="university-logo">
+          <span>Разработано в Курском Государственном Университете</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Карточки алгоритмов -->
+    
+    <!-- Карточка 1 - Boids -->
     <div class="card">
       <canvas id="previewBoids" onclick="openModal('./boids.html')"></canvas>
-      <div class="desc" onclick="openModal('./descriptions/boids.html')">Boids Simulation</div>
+      <div class="desc" onclick="openModal('./descriptions/boids.html')">
+        <div class="title">Boids Simulation</div>
+        <div class="description">Симуляция стаи птиц. Каждая частица следует трем простым правилам: держись вместе со стаей, избегай столкновений с соседями, двигайся в том же направлении что и остальные. Простые локальные правила создают сложное глобальное поведение стаи.</div>
+      </div>
     </div>
 
-    <!-- Карточка 2 -->
+    <!-- Карточка 2 - ACO -->
     <div class="card">
       <canvas id="previewAnts" onclick="openModal('./aco.html')"></canvas>
-      <div class="desc" onclick="openModal('./descriptions/aco.html')">Ant Colony Optimization</div>
+      <div class="desc" onclick="openModal('./descriptions/aco.html')">
+        <div class="title">Ant Colony Optimization</div>
+        <div class="description">Муравьи ищут кратчайший путь между стартовой и конечной точками. Каждый муравей оставляет феромонный след на своем маршруте. Чем короче путь, тем больше муравьев его используют и тем сильнее становится феромонный след, привлекающий других муравьев.</div>
+      </div>
     </div>
 
-    <!-- Карточка 3 -->
+    <!-- Карточка 3 - SDS -->
     <div class="card">
       <canvas id="previewSDS" onclick="openModal('./sds.html')"></canvas>
-      <div class="desc" onclick="openModal('./descriptions/sds.html')">Stochastic Diffusion Search</div>
+      <div class="desc" onclick="openModal('./descriptions/sds.html')">
+        <div class="title">Stochastic Diffusion Search</div>
+        <div class="description">Агенты случайно блуждают по пространству поиска в попытке найти максимум целевой функции. Успешные агенты, нашедшие хорошие решения, привлекают к себе других агентов. Неудачные агенты перезапускаются в случайных местах и начинают поиск заново.</div>
+      </div>
+    </div>
+
+    <!-- Карточка 4 - Vicsek -->
+    <div class="card">
+      <canvas id="previewVicsek" onclick="openModal('./vicsek.html')"></canvas>
+      <div class="desc" onclick="openModal('./descriptions/vicsek.html')">
+        <div class="title">Vicsek Model</div>
+        <div class="description">Частицы движутся с постоянной скоростью и на каждом шаге поворачивают в среднем направлении своих ближайших соседей, плюс добавляется случайный шум. При малом уровне шума возникает коллективное упорядоченное движение всей группы частиц.</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="project-footer">
+      <p>SwarmHub © 2025 | Курский Государственный Университет | Исследование роевого интеллекта</p>
     </div>
   </div>
 
@@ -61,9 +255,6 @@
         if (page.includes("ants.html") && typeof w.newGraph === "function") {
           w.newGraph();
         }
-
-        // Для других страниц ничего не вызываем, если нет нужной функции.
-        // (boids.html сам себя инициализирует, либо ты можешь аналогично вызвать здесь свою функцию)
       };
 
       frame.src = page;
@@ -79,17 +270,16 @@
     import { initBoids } from "../static/js/boids.js";
     import { initAnts } from "../static/js/aco.js";
     import { initSDS } from "../static/js/sds.js";
+    import { initVicsek } from "../static/js/vicsek.js";
 
     // Ждем загрузки DOM
     document.addEventListener('DOMContentLoaded', () => {
-      // Превью для boids - сначала отрисовываем статичную картинку, затем анимация по наведению
+      // Превью для Boids
       const previewCanvas = document.getElementById("previewBoids");
       let boidsInstance = null;
-      let isAnimating = false;
+      let isBoidsAnimating = false;
 
-      // Проверяем что canvas готов
       if (previewCanvas && previewCanvas.getContext) {
-        // Инициализируем превью в режиме паузы с отрисованным состоянием
         boidsInstance = initBoids(previewCanvas, { 
           boidCount: 20, 
           boidSize: 3, 
@@ -98,61 +288,164 @@
           maxSpeed: 6, 
           fov: 360,
           isPreview: true,
-          startPaused: true  // Новый параметр - начинать в паузе, но с отрисованной картинкой
+          startPaused: true
         });
 
-        // Дополнительная попытка отрисовки через requestAnimationFrame
         requestAnimationFrame(() => {
           if (boidsInstance && boidsInstance.drawStaticFrame) {
             boidsInstance.drawStaticFrame();
           }
         });
 
-        // При наведении - запускаем анимацию
         previewCanvas.addEventListener('mouseenter', () => {
-          if (boidsInstance && !isAnimating) {
-            isAnimating = true;
+          if (boidsInstance && !isBoidsAnimating) {
+            isBoidsAnimating = true;
             boidsInstance.startAnimation();
           }
         });
 
-        // При уходе курсора - останавливаем анимацию через некоторое время
         previewCanvas.addEventListener('mouseleave', () => {
-          if (boidsInstance && isAnimating) {
+          if (boidsInstance && isBoidsAnimating) {
             setTimeout(() => {
               if (boidsInstance) {
                 boidsInstance.pauseAnimation();
-                isAnimating = false;
+                isBoidsAnimating = false;
               }
-            }, 1000); // Анимация продолжается еще секунду после ухода курсора
+            }, 1000);
           }
         });
       }
 
-      // Превью для ants (статичный граф без анимации)
-      // const previewAnts = document.getElementById("previewAnts");
-      // if (previewAnts) {
-      //   initAnts(previewAnts, { 
-      //     nodeCount: 8, 
-      //     alpha: 1.0, 
-      //     beta: 2.0, 
-      //     rho: 0.3, 
-      //     autoRun: false 
-      //   });
-      // }
+      // Превью для ACO
+      const previewAnts = document.getElementById("previewAnts");
+      let antsInstance = null;
+      let isAntsAnimating = false;
 
-      // Превью для SDS (статичная визуализация)
-      // const previewSDS = document.getElementById("previewSDS");
-      // if (previewSDS) {
-      //   initSDS(previewSDS, { 
-      //     N: 30, 
-      //     func: 'twopeaks', 
-      //     showHeatmap: true, 
-      //     showTraj: false, 
-      //     showBest: true,
-      //     heatGrid: 16
-      //   });
-      // }
+      if (previewAnts && previewAnts.getContext) {
+        antsInstance = initAnts(previewAnts, {
+          nodeCount: 8,
+          alpha: 1.0,
+          beta: 2.0,
+          rho: 0.3,
+          Q: 1.0,
+          colonySize: 5,
+          maxIterations: 999,
+          speed: 300,
+          seed: 43,
+          isPreview: true
+        });
+
+        requestAnimationFrame(() => {
+          if (antsInstance && antsInstance.drawStaticFrame) {
+            antsInstance.drawStaticFrame();
+          }
+        });
+
+        previewAnts.addEventListener('mouseenter', () => {
+          if (antsInstance && !isAntsAnimating) {
+            isAntsAnimating = true;
+            antsInstance.start();
+          }
+        });
+
+        previewAnts.addEventListener('mouseleave', () => {
+          if (antsInstance && isAntsAnimating) {
+            setTimeout(() => {
+              if (antsInstance) {
+                antsInstance.pause();
+                isAntsAnimating = false;
+              }
+            }, 2000);
+          }
+        });
+      }
+
+      // Превью для SDS
+      const previewSDS = document.getElementById("previewSDS");
+      let sdsInstance = null;
+      let isSDSAnimating = false;
+
+      if (previewSDS && previewSDS.getContext) {
+        sdsInstance = initSDS(previewSDS, {
+          N: 100,
+          func: 'twopeaks',
+          sigma: 0.08,
+          restartProb: 0.6,
+          showHeatmap: false,
+          showTraj: false,
+          showBest: true,
+          stepsPerFrame: 2,
+          isPreview: true,
+          startPaused: true
+        });
+
+        requestAnimationFrame(() => {
+          if (sdsInstance && sdsInstance.drawStaticFrame) {
+            sdsInstance.drawStaticFrame();
+          }
+        });
+
+        previewSDS.addEventListener('mouseenter', () => {
+          if (sdsInstance && !isSDSAnimating) {
+            isSDSAnimating = true;
+            sdsInstance.startAnimation();
+          }
+        });
+
+        previewSDS.addEventListener('mouseleave', () => {
+          if (sdsInstance && isSDSAnimating) {
+            setTimeout(() => {
+              if (sdsInstance) {
+                sdsInstance.pauseAnimation();
+                isSDSAnimating = false;
+              }
+            }, 1500);
+          }
+        });
+      }
+
+      // Превью для Vicsek
+      const previewVicsek = document.getElementById("previewVicsek");
+      let vicsekInstance = null;
+      let isVicsekAnimating = false;
+
+      if (previewVicsek && previewVicsek.getContext) {
+        vicsekInstance = initVicsek(previewVicsek, {
+          particleCount: 50,
+          interactionRadius: 25,
+          noiseAmplitude: 0.3,
+          speed: 1.5,
+          timeStep: 1.0,
+          vizTrails: 30,
+          showTrails: false,
+          isPreview: true,
+          startPaused: true
+        });
+
+        requestAnimationFrame(() => {
+          if (vicsekInstance && vicsekInstance.drawStaticFrame) {
+            vicsekInstance.drawStaticFrame();
+          }
+        });
+
+        previewVicsek.addEventListener('mouseenter', () => {
+          if (vicsekInstance && !isVicsekAnimating) {
+            isVicsekAnimating = true;
+            vicsekInstance.startAnimation();
+          }
+        });
+
+        previewVicsek.addEventListener('mouseleave', () => {
+          if (vicsekInstance && isVicsekAnimating) {
+            setTimeout(() => {
+              if (vicsekInstance) {
+                vicsekInstance.pauseAnimation();
+                isVicsekAnimating = false;
+              }
+            }, 1000);
+          }
+        });
+      }
     });
   </script>
 </body>

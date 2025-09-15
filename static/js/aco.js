@@ -34,7 +34,7 @@ export function initAnts(canvas, options = {}) {
     maxIterations: options.maxIterations ?? 100, // бюджет итераций T
     tau0: options.tau0 ?? 1.0,                // начальная концентрация феромона (> 0)
     graphType: options.graphType ?? 'undirected', // тип графа
-    startDist: options.startDist ?? 'uniform', // распределение стартовых вершин
+    startDist: options.startDist ?? 'fixed', // распределение стартовых вершин
     seed: options.seed ?? 42,                 // инициализация ГПСЧ
     
     // Технические параметры
@@ -55,6 +55,7 @@ export function initAnts(canvas, options = {}) {
   let currentBestLength = Infinity;
   let iteration = 0;
   let prng = new PRNG(params.seed);
+  let isGraphInitialized = false; // Флаг инициализации графа
 
   // Предрендеренные LaTeX формулы
   let tooltipElements = {};
@@ -121,6 +122,7 @@ export function initAnts(canvas, options = {}) {
     currentBestPath = null;
     currentBestLength = Infinity;
     iteration = 0;
+    isGraphInitialized = true; // Устанавливаем флаг
   }
 
   function drawArrow(fromX, fromY, toX, toY, color, lineWidth) {
@@ -162,7 +164,7 @@ export function initAnts(canvas, options = {}) {
   }
 
   function drawPathWithDirection(path, color, lineWidth, dashed = false) {
-    if (!path || path.length < 2) return;
+    if (!path || path.length < 2 || !isGraphInitialized) return;
     
     ctx.save();
     if (dashed) {
@@ -178,13 +180,15 @@ export function initAnts(canvas, options = {}) {
       const from = path[k];
       const to = path[k + 1];
       
-      if (params.graphType === 'directed') {
-        drawArrow(nodes[from].x, nodes[from].y, nodes[to].x, nodes[to].y, color, lineWidth);
-      } else {
-        ctx.beginPath();
-        ctx.moveTo(nodes[from].x, nodes[from].y);
-        ctx.lineTo(nodes[to].x, nodes[to].y);
-        ctx.stroke();
+      if (from < nodes.length && to < nodes.length) {
+        if (params.graphType === 'directed') {
+          drawArrow(nodes[from].x, nodes[from].y, nodes[to].x, nodes[to].y, color, lineWidth);
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(nodes[from].x, nodes[from].y);
+          ctx.lineTo(nodes[to].x, nodes[to].y);
+          ctx.stroke();
+        }
       }
     }
     
@@ -192,6 +196,8 @@ export function initAnts(canvas, options = {}) {
   }
 
   function draw() {
+    if (!isGraphInitialized) return; // Не рисуем, если граф не инициализирован
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Рисуем рёбра в зависимости от режима визуализации
@@ -203,7 +209,7 @@ export function initAnts(canvas, options = {}) {
 
       for (let i = 0; i < params.nodeCount; i++) {
         for (let j = 0; j < params.nodeCount; j++) {
-          if (i !== j) {
+          if (i !== j && distances[i] && distances[i][j] !== undefined) {
             const pheromone = pheromones[i][j];
             const intensity = pheromoneRange > 0 ? 
               (pheromone - minPheromone) / pheromoneRange : 0.1;
@@ -232,7 +238,7 @@ export function initAnts(canvas, options = {}) {
 
       for (let i = 0; i < params.nodeCount; i++) {
         for (let j = 0; j < params.nodeCount; j++) {
-          if (i !== j) {
+          if (i !== j && distances[i] && distances[i][j] !== undefined) {
             const distance = distances[i][j];
             const heuristic = 1 / distance; // η = 1/d
             const maxHeuristic = 1 / minDistance;
@@ -262,7 +268,7 @@ export function initAnts(canvas, options = {}) {
       // Только слабые связи для контекста
       for (let i = 0; i < params.nodeCount; i++) {
         for (let j = 0; j < params.nodeCount; j++) {
-          if (i !== j) {
+          if (i !== j && nodes[i] && nodes[j]) {
             const color = "rgba(255,255,255,0.05)";
             const lineWidth = 1;
             
@@ -293,6 +299,8 @@ export function initAnts(canvas, options = {}) {
 
     // Рисуем узлы
     for (let i = 0; i < params.nodeCount; i++) {
+      if (!nodes[i]) continue;
+      
       ctx.beginPath();
       ctx.arc(nodes[i].x, nodes[i].y, 8, 0, 2 * Math.PI);
       
@@ -323,13 +331,19 @@ export function initAnts(canvas, options = {}) {
     ctx.textAlign = "center";
     
     // Подпись "СТАРТ"
-    ctx.fillText("СТАРТ", nodes[startNode].x, nodes[startNode].y - 15);
+    if (nodes[startNode]) {
+      ctx.fillText("СТАРТ", nodes[startNode].x, nodes[startNode].y - 15);
+    }
     
     // Подпись "ФИНИШ"
-    ctx.fillText("ФИНИШ", nodes[endNode].x, nodes[endNode].y - 15);
+    if (nodes[endNode]) {
+      ctx.fillText("ФИНИШ", nodes[endNode].x, nodes[endNode].y - 15);
+    }
   }
 
   function constructPath(fromNode) {
+    if (!isGraphInitialized || !distances[fromNode]) return [];
+    
     const path = [fromNode];
     const visited = new Set([fromNode]);
     let current = fromNode;
@@ -341,7 +355,8 @@ export function initAnts(canvas, options = {}) {
 
       // Вычисляем вероятности перехода к непосещённым узлам
       for (let j = 0; j < params.nodeCount; j++) {
-        if (!visited.has(j)) {
+        if (!visited.has(j) && pheromones[current] && distances[current] && 
+            pheromones[current][j] !== undefined && distances[current][j] !== undefined) {
           const tau = Math.pow(Math.max(pheromones[current][j], 1e-10), params.alpha);
           const eta = Math.pow(1 / Math.max(distances[current][j], 1e-10), params.beta);
           const probability = tau * eta;
@@ -379,11 +394,15 @@ export function initAnts(canvas, options = {}) {
   }
 
   function calculatePathLength(path) {
-    if (path.length < 2) return Infinity;
+    if (path.length < 2 || !isGraphInitialized) return Infinity;
     
     let length = 0;
     for (let i = 0; i < path.length - 1; i++) {
-      length += distances[path[i]][path[i + 1]];
+      if (distances[path[i]] && distances[path[i]][path[i + 1]] !== undefined) {
+        length += distances[path[i]][path[i + 1]];
+      } else {
+        return Infinity;
+      }
     }
     
     return length;
@@ -400,7 +419,7 @@ export function initAnts(canvas, options = {}) {
   }
 
   function step() {
-    if (iteration >= params.maxIterations) {
+    if (iteration >= params.maxIterations || !isGraphInitialized) {
       const startBtn = document.getElementById('startBtn');
       if (startBtn) startBtn.textContent = 'Старт';
       pause();
@@ -429,7 +448,7 @@ export function initAnts(canvas, options = {}) {
       const length = pathLengths[i];
       
       // Проверяем, достиг ли путь конечной точки
-      if (path[path.length - 1] === endNode && length < iterationBestLength) {
+      if (path.length > 0 && path[path.length - 1] === endNode && length < iterationBestLength) {
         iterationBestLength = length;
         iterationBestIdx = i;
       }
@@ -449,9 +468,11 @@ export function initAnts(canvas, options = {}) {
     // Испарение феромонов
     for (let i = 0; i < params.nodeCount; i++) {
       for (let j = 0; j < params.nodeCount; j++) {
-        pheromones[i][j] *= (1 - params.rho);
-        if (pheromones[i][j] < 1e-10) {
-          pheromones[i][j] = 1e-10;
+        if (pheromones[i] && pheromones[i][j] !== undefined) {
+          pheromones[i][j] *= (1 - params.rho);
+          if (pheromones[i][j] < 1e-10) {
+            pheromones[i][j] = 1e-10;
+          }
         }
       }
     }
@@ -462,17 +483,20 @@ export function initAnts(canvas, options = {}) {
       const pathLength = pathLengths[ant];
       
       // Откладываем феромон только если муравей достиг конечной точки
-      if (path[path.length - 1] === endNode && pathLength < Infinity && pathLength > 0) {
+      if (path.length > 0 && path[path.length - 1] === endNode && pathLength < Infinity && pathLength > 0) {
         const deltaTau = params.Q / pathLength;
         
         // Обновляем феромоны на рёбрах пути
         for (let i = 0; i < path.length - 1; i++) {
           const from = path[i];
           const to = path[i + 1];
-          pheromones[from][to] += deltaTau;
           
-          if (params.graphType === 'undirected') {
-            pheromones[to][from] += deltaTau;
+          if (pheromones[from] && pheromones[from][to] !== undefined) {
+            pheromones[from][to] += deltaTau;
+            
+            if (params.graphType === 'undirected' && pheromones[to] && pheromones[to][from] !== undefined) {
+              pheromones[to][from] += deltaTau;
+            }
           }
         }
       }
@@ -484,7 +508,7 @@ export function initAnts(canvas, options = {}) {
   }
 
   function start() {
-    if (!running) {
+    if (!running && isGraphInitialized) {
       running = true;
       isPaused = false;
       timer = setInterval(step, params.speed);
@@ -556,7 +580,7 @@ export function initAnts(canvas, options = {}) {
       // Перегенерируем матрицу феромонов с новым начальным значением
       for (let i = 0; i < params.nodeCount; i++) {
         for (let j = 0; j < params.nodeCount; j++) {
-          if (i !== j) {
+          if (i !== j && pheromones[i]) {
             pheromones[i][j] = params.tau0;
           }
         }
@@ -585,6 +609,9 @@ export function initAnts(canvas, options = {}) {
   }
 
   function drawStaticFrame() {
+    if (!isGraphInitialized) {
+      generateGraph(); // Инициализируем граф если он еще не готов
+    }
     draw();
   }
 
@@ -625,35 +652,39 @@ export function initAnts(canvas, options = {}) {
 
     // Кнопка старт/пауза
     const startBtn = document.getElementById('startBtn');
-    startBtn.addEventListener('click', () => {
-      if (running) {
-        pause();
-      } else {
-        start();
-      }
-    });
+    if (startBtn) {
+      startBtn.addEventListener('click', () => {
+        if (running) {
+          pause();
+        } else {
+          start();
+        }
+      });
+    }
 
     // Кнопки управления
     const newGraphBtn = document.getElementById('newGraphBtn');
     const stepBtn = document.getElementById('stepBtn');
 
-    newGraphBtn.addEventListener('click', newGraph);
-    stepBtn.addEventListener('click', step);
+    if (newGraphBtn) newGraphBtn.addEventListener('click', newGraph);
+    if (stepBtn) stepBtn.addEventListener('click', step);
 
     // Кнопка расширенных настроек
     const advancedBtn = document.getElementById('advancedBtn');
     const advancedControls = document.getElementById('advancedControls');
     let advancedVisible = false;
-    advancedBtn.addEventListener('click', () => {
-      advancedVisible = !advancedVisible;
-      if (advancedVisible) {
-        advancedControls.classList.add('show');
-        advancedBtn.textContent = 'Скрыть';
-      } else {
-        advancedControls.classList.remove('show');
-        advancedBtn.textContent = 'Расширенные настройки';
-      }
-    });
+    if (advancedBtn && advancedControls) {
+      advancedBtn.addEventListener('click', () => {
+        advancedVisible = !advancedVisible;
+        if (advancedVisible) {
+          advancedControls.classList.add('show');
+          advancedBtn.textContent = 'Скрыть';
+        } else {
+          advancedControls.classList.remove('show');
+          advancedBtn.textContent = 'Расширенные настройки';
+        }
+      });
+    }
 
     // Кнопка типа графа
     const graphTypeBtn = document.getElementById('graphTypeBtn');
@@ -867,10 +898,12 @@ export function initAnts(canvas, options = {}) {
     const scaleY = newHeight / canvas.height;
     
     // Масштабируем позиции узлов
-    nodes.forEach(node => {
-      node.x *= scaleX;
-      node.y *= scaleY;
-    });
+    if (isGraphInitialized) {
+      nodes.forEach(node => {
+        node.x *= scaleX;
+        node.y *= scaleY;
+      });
+    }
     
     // Обновляем размер канваса
     canvas.width = newWidth;
@@ -882,6 +915,9 @@ export function initAnts(canvas, options = {}) {
   
   // Привязываем обработчик изменения размера
   window.addEventListener('resize', handleResize);
+
+  // Инициализация графа при создании
+  generateGraph();
 
   return { 
     params, 

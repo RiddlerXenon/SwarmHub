@@ -65,8 +65,8 @@
         </div>
         <div class="control-row">
           <label class="tooltip-label" data-tooltip="N">Размер популяции $N$:</label>
-          <input type="range" id="populationSize" min="50" max="500" step="10" value="300">
-          <span class="value-display" id="populationSizeVal">300</span>
+          <input type="range" id="populationSize" min="50" max="150" step="10" value="100">
+          <span class="value-display" id="populationSizeVal">100</span>
         </div>
         <div class="control-row">
           <label class="tooltip-label" data-tooltip="sigma">Дисперсия шума $\sigma_0$:</label>
@@ -121,14 +121,14 @@
     const canvas = document.getElementById("canvas");
     
     const { createUI } = initSDS(canvas, {
-      N: 300,
+      N: 100,
       func: 'twopeaks',
       sigma: 0.05,
       restartProb: 0.5,
       anneal: false,
       annealDecay: 0.999,
       showHeatmap: true,
-      showTraj: true,
+      showTraj: false,
       showBest: true,
       stepsPerFrame: 3,
       seed: 123456789,

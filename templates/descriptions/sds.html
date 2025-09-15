@@ -76,7 +76,8 @@
             font-family: 'Times New Roman', Times, serif;
         }
         
-        .algorithm-for, .algorithm-while, .algorithm-foreach, .algorithm-return {
+        .algorithm-for, .algorithm-while, .algorithm-foreach, .algorithm-return, 
+        .algorithm-if, .algorithm-else {
             margin: 5px 0;
             color: #fff;
             font-weight: bold;
@@ -221,22 +222,18 @@
 <div class="algorithm-for">&nbsp;&nbsp;&nbsp;&nbsp;<strong>для</strong> $i = 1, 2, \ldots, N$ <strong>делать</strong></div>
 <div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Сгенерировать <span class="algorithm-math">$\omega^{(t)} \sim \mathcal{U}(\mathcal{S})$</span></div>
 <div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="algorithm-math">${i}^{(t)} \leftarrow \mathbb{1} \{f({i}^{(t)}) \geq f(\omega^{(t)})\}$</span></div>
-<div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\If{<span class="algorithm-math">${i}^{(t)} = 1$</span>}{</div>
 <div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="algorithm-math">$\mathcal{W}^{(t)} \leftarrow \mathcal{W}^{(t)} \cup \{i\}$</span></div>
 <div class="algorithm-comment">// Фаза диффузии</div>
-<div class="algorithm-line">\If{<span class="algorithm-math">$|\mathcal{W}^{(t)}| = 0$</span>}{</div>
 <div class="algorithm-for"><strong>для</strong> $i = 1, 2, \ldots, N$ <strong>делать</strong></div>
-<div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;\If{<span class="algorithm-math">$\xi \sim \mathcal{U}(0,1) \leq p_{restart}$</span>}{</div>
 <div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="algorithm-math">${i}^{(t+1)} \sim \mathcal{U}(\mathcal{S})$</span></div>
-<div class="algorithm-line">\Else{</div>
-<div class="algorithm-line"><span class="algorithm-math">${i}^{(t+1)} \leftarrow {i}^{(t)}$</span></div>
-<div class="algorithm-line">\Else{</div>
-<div class="algorithm-for"><strong>для</strong> $i = 1, 2, \ldots, N$ <strong>делать</strong></div>
-<div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;\If{<span class="algorithm-math">${i}^{(t)} = 1$</span>}{</div>
+<div class="algorithm-else"><strong>иначе</strong></div>
 <div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="algorithm-math">${i}^{(t+1)} \leftarrow {i}^{(t)}$</span></div>
-<div class="algorithm-line">\Else{</div>
-<div class="algorithm-line">Выбрать <span class="algorithm-math">$j \sim \mathcal{U}(\mathcal{W}^{(t)})$</span></div>
-<div class="algorithm-line"><span class="algorithm-math">${i}^{(t+1)} \leftarrow {j}^{(t)}$</span></div>
+<div class="algorithm-else"><strong>иначе</strong></div>
+<div class="algorithm-for">&nbsp;&nbsp;&nbsp;&nbsp;<strong>для</strong> $i = 1, 2, \ldots, N$ <strong>делать</strong></div>
+<div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="algorithm-math">${i}^{(t+1)} \leftarrow {i}^{(t)}$</span></div>
+<div class="algorithm-else"><strong>иначе</strong></div>
+<div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;Выбрать <span class="algorithm-math">$j \sim \mathcal{U}(\mathcal{W}^{(t)})$</span></div>
+<div class="algorithm-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="algorithm-math">${i}^{(t+1)} \leftarrow {j}^{(t)}$</span></div>
 <div class="algorithm-comment">// Фаза разведки</div>
 <div class="algorithm-line">Вычислить <span class="algorithm-math">$\sigma^{(t)}$</span> согласно уравнению (7)</div>
 <div class="algorithm-for"><strong>для</strong> $i = 1, 2, \ldots, N$ <strong>делать</strong></div>
@@ -245,7 +242,6 @@
 <div class="algorithm-return"><strong>вернуть</strong> $(h^*, f^*)$</div>
 </div>
 <p>Алгоритм стохастического диффузионного поиска представляет собой эффективный инструмент для решения задач глобальной мультимодальной оптимизации, сочетающий простоту реализации с теоретически обоснованными свойствами сходимости. Естественная поддержка параллелизации, минимальные требования к настройке параметров и способность к автоматическому обнаружению множественных оптимумов делают его привлекательной альтернативой традиционным метаэвристическим методам для широкого класса практических задач оптимизации в условиях неопределенности [1, 2, 4].</p>
-<p>\noindent\hrulefill</p>
         
 <hr>
 <div class="references">

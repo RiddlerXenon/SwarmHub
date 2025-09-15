@@ -286,7 +286,7 @@ canvas {
 }
 
 /* ACO */
-#visualBtn, #graphTypeBtn, #startDistBtn, #funcBtn, #annealBtn {
+#visualBtn, #graphTypeBtn, #startDistBtn, #funcBtn, #annealBtn, #initHeadingsBtn, #initPositionsBtn {
   background: #222;
   border: none;
   color: white;
@@ -296,7 +296,7 @@ canvas {
   margin-bottom: 3px;
 }
 
-#visualBtn:hover, #graphTypeBtn:hover, #startDistBtn:hover, #funcBtn:hover, #annealBtn:hover {
+#visualBtn:hover, #graphTypeBtn:hover, #startDistBtn:hover, #funcBtn:hover, #annealBtn:hover, #initPositionsBtn:hover, #initHeadingsBtn:hover {
   background: #555;
 }
 
@@ -363,7 +363,7 @@ table, th, td {
   border-bottom: none;
 }
 
-#seed {
+#seed, #rngSeed {
   background: #222;
   color: white;
   border-radius: 3px;
@@ -379,12 +379,14 @@ table, th, td {
 }
 
 #seed::-webkit-outer-spin-button,
-#seed::-webkit-inner-spin-button {
+#seed::-webkit-inner-spin-button,
+#rngSeed::-webkit-outer-spin-button,
+#rngSeed::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-#seed {
+#seed, #rngSeed {
   -moz-appearance: textfield;
 }
 
@@ -444,4 +446,47 @@ table, th, td {
     font-weight: bold;
     color: #ff9800;
     margin: 10px 0;
+}
+
+.card canvas {
+  transition: opacity 0.3s ease;
+}
+
+.card:hover canvas {
+  opacity: 1;
+}
+
+.card canvas:not(:hover) {
+  opacity: 0.8;
+}
+
+.card .desc {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow: visible;
+  word-wrap: break-word;
+}
+
+.card .desc .title {
+  text-align: center;
+  font-weight: bold;
+  font-size: 18px;
+  color: #3ddc84;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 40px;
+}
+
+.card .desc .description {
+  text-align: justify;
+  color: #cccccc;
+  display: flex;
+  align-items: center; /* центрирование текста по вертикали */
+  font-size: 16px;
+  padding: 30px;
+  padding-top: 20px;
 }
