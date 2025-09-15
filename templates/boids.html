@@ -2,262 +2,172 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Главная страница</title>
+  <title>Boids Demo</title>
   <link rel="stylesheet" href="../static/css/styles.css">
-  <style>
-    .card canvas {
-      transition: opacity 0.3s ease;
-    }
-    
-    .card:hover canvas {
-      opacity: 1;
-    }
-    
-    .card canvas:not(:hover) {
-      opacity: 0.8;
-    }
-  </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Карточка 1 - Boids -->
-    <div class="card">
-      <canvas id="previewBoids" onclick="openModal('./boids.html')"></canvas>
-      <div class="desc" onclick="openModal('./descriptions/boids.html')">Boids Simulation</div>
-    </div>
+  <canvas id="canvas"></canvas>
 
-    <!-- Карточка 2 - ACO -->
-    <div class="card">
-      <canvas id="previewAnts" onclick="openModal('./aco.html')"></canvas>
-      <div class="desc" onclick="openModal('./descriptions/aco.html')">Ant Colony Optimization</div>
-    </div>
+  <div id="controlPanel" class="collapsed">
+    <button id="toggleBtn">☰</button>
+    <div id="mainControls">
+      
+      <!-- Кнопки управления -->
+      <div class="control-group">
+        <div class="button-group">
+          <button id="pauseBtn">Pause</button>
+          <button id="wallsBtn" class="active">Walls OFF</button>
+          <button id="fovBtn">FOV ON</button>
+          <button id="tracingBtn">Trace ON</button>
+        </div>
+      </div>
 
-    <!-- Карточка 3 - SDS -->
-    <div class="card">
-      <canvas id="previewSDS" onclick="openModal('./sds.html')"></canvas>
-      <div class="desc" onclick="openModal('./descriptions/sds.html')">Stochastic Diffusion Search</div>
-    </div>
+      <!-- Основные параметры -->
+      <div class="control-group">
+        <div class="control-row">
+          <label>dt:</label>
+          <input type="range" id="dt" min="0.1" max="2.0" step="0.1" value="1.0">
+          <span class="value-display" id="dtVal">1.0</span>
+        </div>
+        <div class="control-row">
+          <label>Boids:</label>
+          <input type="range" id="boidCount" min="20" max="200" value="100">
+          <span class="value-display" id="boidCountVal">100</span>
+        </div>
+        <div class="control-row">
+          <label>φ (deg):</label>
+          <input type="range" id="phi" min="45" max="360" step="1" value="135">
+          <span class="value-display" id="phiVal">135°</span>
+        </div>
+      </div>
 
-    <!-- Карточка 4 - Vicsek -->
-    <div class="card">
-      <canvas id="previewVicsek" onclick="openModal('./vicsek.html')"></canvas>
-      <div class="desc" onclick="openModal('./descriptions/vicsek.html')">Vicsek</div>
+      <!-- Веса -->
+      <div class="control-group">
+        <div class="control-row">
+          <label>w_match:</label>
+          <input type="range" id="wmatch" min="0.0" max="2.0" step="0.1" value="1.0">
+          <span class="value-display" id="wmatchVal">1.0</span>
+        </div>
+        <div class="control-row">
+          <label>w_center:</label>
+          <input type="range" id="wcenter" min="0.0" max="2.0" step="0.1" value="0.8">
+          <span class="value-display" id="wcenterVal">0.8</span>
+        </div>
+        <div class="control-row">
+          <label>w_sep:</label>
+          <input type="range" id="wsep" min="0.0" max="3.0" step="0.1" value="1.2">
+          <span class="value-display" id="wsepVal">1.2</span>
+        </div>
+      </div>
+
+      <!-- Кнопка расширенных настроек -->
+      <div id="advancedCG" class="control-group">
+        <button id="advancedBtn">Расширенные настойки</button>
+      </div>
+
+      <!-- Расширенные настройки -->
+      <div id="advancedControls">
+        <div class="control-row">
+          <label>Соседство:</label>
+          <button id="neighborBtn">metric</button>
+        </div>
+
+        <div id="k_topo">
+          <div class="control-row">
+            <label>k (topo):</label>
+            <input type="range" id="kTopo" min="1" max="50" step="1" value="7">
+            <span class="value-display" id="kTopoVal">7</span>
+          </div>
+        </div>
+
+        <div class="control-row">
+          <label>r:</label>
+          <input type="range" id="r" min="20" max="150" step="1" value="60">
+          <span class="value-display" id="rVal">60</span>
+        </div>
+
+        <div class="control-row">
+          <label>r_sep:</label>
+          <input type="range" id="rsep" min="10" max="100" step="1" value="30">
+          <span class="value-display" id="rsepVal">30</span>
+        </div>
+
+        <div class="control-row">
+          <label>v_pref:</label>
+          <input type="range" id="vpref" min="0.1" max="6.0" step="0.1" value="1.5">
+          <span class="value-display" id="vprefVal">1.50</span>
+        </div>
+
+        <div class="control-row">
+          <label>v_max:</label>
+          <input type="range" id="vmax" min="1.0" max="6.0" step="0.1" value="2.5">
+          <span class="value-display" id="vmaxVal">2.5</span>
+        </div>
+
+        <div class="control-row">
+          <label>a_max:</label>
+          <input type="range" id="amax" min="0.01" max="0.2" step="0.005" value="0.05">
+          <span class="value-display" id="amaxVal">0.05</span>
+        </div>
+
+        <div class="control-row">
+          <label>τ_match:</label>
+          <input type="range" id="taumatch" min="0.1" max="5.0" step="0.1" value="1.0">
+          <span class="value-display" id="taumatchVal">1.00</span>
+        </div>
+
+        <div class="control-row">
+          <label>τ_center:</label>
+          <input type="range" id="taucenter" min="0.1" max="5.0" step="0.1" value="1.2">
+          <span class="value-display" id="taucenterVal">1.20</span>
+        </div>
+
+        <div class="control-row">
+          <label>τ_sep:</label>
+          <input type="range" id="tausep" min="0.1" max="5.0" step="0.1" value="0.6">
+          <span class="value-display" id="tausepVal">0.60</span>
+        </div>
+
+        <div class="control-row">
+          <label>k_sep:</label>
+          <input type="range" id="ksep" min="0.0" max="5.0" step="0.1" value="1.0">
+          <span class="value-display" id="ksepVal">1.00</span>
+        </div>
+
+        <div class="control-row">
+          <label style="font-size: 10">Сопротивление:</label>
+          <button id="dampBtn">off</button>
+        </div>
+
+        <div id="damp">
+          <div class="control-row">
+            <label>γ:</label>
+            <input type="range" id="gamma" min="0.0" max="0.5" step="0.01" value="0.0">
+            <span class="value-display" id="gammaVal">0.0</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-
-  <div class="overlay" id="overlay">
-    <div class="modal">
-      <button class="close-btn" onclick="closeModal()">✕</button>
-      <iframe id="modalFrame" src=""></iframe>
-    </div>
-  </div>
-
-  <script>
-    function openModal(page) {
-      const overlay = document.getElementById("overlay");
-      const frame = document.getElementById("modalFrame");
-
-      overlay.classList.add("active");
-
-      frame.onload = () => {
-        const w = frame.contentWindow;
-        if (!w) return;
-
-        // Для ants.html (если есть глобальная функция)
-        if (page.includes("ants.html") && typeof w.newGraph === "function") {
-          w.newGraph();
-        }
-      };
-
-      frame.src = page;
-    }
-
-    function closeModal() {
-      document.getElementById("modalFrame").src = "";
-      document.getElementById("overlay").classList.remove("active");
-    }
-  </script>
 
   <script type="module">
     import { initBoids } from "../static/js/boids.js";
-    import { initAnts } from "../static/js/aco.js";
-    import { initSDS } from "../static/js/sds.js";
-    import { initVicsek } from "../static/js/vicsek.js";
 
-    // Ждем загрузки DOM
-    document.addEventListener('DOMContentLoaded', () => {
-      // Превью для Boids
-      const previewCanvas = document.getElementById("previewBoids");
-      let boidsInstance = null;
-      let isBoidsAnimating = false;
+    const canvas = document.getElementById("canvas");
+    
+    const { createUI } = initBoids(canvas, {
+      boidCount: 100,
+      maxSpeed: 3.0,
+      isPreview: false
+    });
 
-      if (previewCanvas && previewCanvas.getContext) {
-        boidsInstance = initBoids(previewCanvas, { 
-          boidCount: 20, 
-          boidSize: 3, 
-          separationWeight: 3, 
-          separationDist: 70, 
-          maxSpeed: 6, 
-          fov: 360,
-          isPreview: true,
-          startPaused: true
-        });
+    // Создаем UI
+    createUI();
 
-        requestAnimationFrame(() => {
-          if (boidsInstance && boidsInstance.drawStaticFrame) {
-            boidsInstance.drawStaticFrame();
-          }
-        });
-
-        previewCanvas.addEventListener('mouseenter', () => {
-          if (boidsInstance && !isBoidsAnimating) {
-            isBoidsAnimating = true;
-            boidsInstance.startAnimation();
-          }
-        });
-
-        previewCanvas.addEventListener('mouseleave', () => {
-          if (boidsInstance && isBoidsAnimating) {
-            setTimeout(() => {
-              if (boidsInstance) {
-                boidsInstance.pauseAnimation();
-                isBoidsAnimating = false;
-              }
-            }, 1000);
-          }
-        });
-      }
-
-      // Превью для ACO
-      const previewAnts = document.getElementById("previewAnts");
-      let antsInstance = null;
-      let isAntsAnimating = false;
-
-      if (previewAnts && previewAnts.getContext) {
-        antsInstance = initAnts(previewAnts, {
-          nodeCount: 8,
-          alpha: 1.0,
-          beta: 2.0,
-          rho: 0.3,
-          Q: 1.0,
-          colonySize: 5,
-          maxIterations: 999,
-          speed: 300,
-          seed: 43,
-          isPreview: true
-        });
-
-        requestAnimationFrame(() => {
-          if (antsInstance && antsInstance.drawStaticFrame) {
-            antsInstance.drawStaticFrame();
-          }
-        });
-
-        previewAnts.addEventListener('mouseenter', () => {
-          if (antsInstance && !isAntsAnimating) {
-            isAntsAnimating = true;
-            antsInstance.start();
-          }
-        });
-
-        previewAnts.addEventListener('mouseleave', () => {
-          if (antsInstance && isAntsAnimating) {
-            setTimeout(() => {
-              if (antsInstance) {
-                antsInstance.pause();
-                isAntsAnimating = false;
-              }
-            }, 2000);
-          }
-        });
-      }
-
-      // Превью для SDS
-      const previewSDS = document.getElementById("previewSDS");
-      let sdsInstance = null;
-      let isSDSAnimating = false;
-
-      if (previewSDS && previewSDS.getContext) {
-        sdsInstance = initSDS(previewSDS, {
-          N: 100,
-          func: 'twopeaks',
-          sigma: 0.08,
-          restartProb: 0.6,
-          showHeatmap: false,
-          showTraj: false,
-          showBest: true,
-          stepsPerFrame: 2,
-          isPreview: true,
-          startPaused: true
-        });
-
-        requestAnimationFrame(() => {
-          if (sdsInstance && sdsInstance.drawStaticFrame) {
-            sdsInstance.drawStaticFrame();
-          }
-        });
-
-        previewSDS.addEventListener('mouseenter', () => {
-          if (sdsInstance && !isSDSAnimating) {
-            isSDSAnimating = true;
-            sdsInstance.startAnimation();
-          }
-        });
-
-        previewSDS.addEventListener('mouseleave', () => {
-          if (sdsInstance && isSDSAnimating) {
-            setTimeout(() => {
-              if (sdsInstance) {
-                sdsInstance.pauseAnimation();
-                isSDSAnimating = false;
-              }
-            }, 1500);
-          }
-        });
-      }
-
-      // Превью для Vicsek
-        const previewVicsek = document.getElementById("previewVicsek");
-        let vicsekInstance = null;
-        let isVicsekAnimating = false;
-
-        if (previewVicsek && previewVicsek.getContext) {
-          vicsekInstance = initVicsek(previewVicsek, {
-            particleCount: 50,
-            interactionRadius: 25,
-            noiseAmplitude: 0.3,
-            speed: 1.5,
-            timeStep: 1.0,
-            vizTrails: 30,
-            showTrails: false,
-            isPreview: true,
-            startPaused: true
-          });
-
-          requestAnimationFrame(() => {
-            if (vicsekInstance && vicsekInstance.drawStaticFrame) {
-              vicsekInstance.drawStaticFrame();
-            }
-          });
-
-          previewVicsek.addEventListener('mouseenter', () => {
-            if (vicsekInstance && !isVicsekAnimating) {
-              isVicsekAnimating = true;
-              vicsekInstance.startAnimation();
-            }
-          });
-
-          previewVicsek.addEventListener('mouseleave', () => {
-            if (vicsekInstance && isVicsekAnimating) {
-              setTimeout(() => {
-                if (vicsekInstance) {
-                  vicsekInstance.pauseAnimation();
-                  isVicsekAnimating = false;
-                }
-              }, 1000);
-            }
-          });
-        }
+    // Обновление размера канваса при изменении размера окна
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     });
   </script>
 </body>
