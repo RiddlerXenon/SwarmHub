@@ -1,5 +1,5 @@
 # Многоэтапная сборка
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 # Устанавливаем необходимые пакеты
 RUN apk add --no-cache git ca-certificates tzdata
@@ -17,7 +17,7 @@ RUN go mod download
 COPY . .
 
 # Собираем приложение
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server ./cmd/SwarmHub
 
 # Финальный образ
 FROM alpine:latest
