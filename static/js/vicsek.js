@@ -595,17 +595,6 @@ export function initVicsek(canvas, options = {}) {
       updateUIMetrics();
     });
 
-    // Кнопка нового сида
-    const newSeedBtn = document.getElementById('newSeedBtn');
-    newSeedBtn.addEventListener('click', () => {
-      const newSeed = Math.floor(Math.random() * 1000000000);
-      params.rngSeed = newSeed;
-      document.getElementById('rngSeed').value = newSeed;
-      prng = new PRNG(newSeed);
-      initializeParticles();
-      updateUIMetrics();
-    });
-
     // Визуальные кнопки
     const showTrailsBtn = document.getElementById('showTrailsBtn');
     showTrailsBtn.classList.toggle('active', params.showTrails);
@@ -614,22 +603,6 @@ export function initVicsek(canvas, options = {}) {
       params.showTrails = !params.showTrails;
       showTrailsBtn.classList.toggle('active', params.showTrails);
       showTrailsBtn.textContent = params.showTrails ? 'След ВКЛ' : 'След ВЫКЛ';
-    });
-
-    const showNeighborsBtn = document.getElementById('showNeighborsBtn');
-    showNeighborsBtn.classList.toggle('active', params.showNeighbors);
-    showNeighborsBtn.addEventListener('click', () => {
-      params.showNeighbors = !params.showNeighbors;
-      showNeighborsBtn.classList.toggle('active', params.showNeighbors);
-      showNeighborsBtn.textContent = params.showNeighbors ? 'Соседи ВКЛ' : 'Соседи ВЫКЛ';
-    });
-
-    const showVelocitiesBtn = document.getElementById('showVelocitiesBtn');
-    showVelocitiesBtn.classList.toggle('active', params.showVelocities);
-    showVelocitiesBtn.addEventListener('click', () => {
-      params.showVelocities = !params.showVelocities;
-      showVelocitiesBtn.classList.toggle('active', params.showVelocities);
-      showVelocitiesBtn.textContent = params.showVelocities ? 'Скор ВКЛ' : 'Скор ВЫКЛ';
     });
 
     // Кнопка расширенных настроек

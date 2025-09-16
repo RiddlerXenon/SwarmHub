@@ -1,44 +1,24 @@
-version: '3.8'
-
 services:
   swarmhub-server:
     build: .
     ports:
-      - "127.0.0.1:8080:8080"   # Только локальный доступ
-      - "127.0.0.1:8443:8443"   # Только локальный доступ
+      - "127.0.0.1:8090:8080"
     environment:
       - HTTP_PORT=8080
-      - HTTPS_PORT=8443
-      - CERT_FILE=/certs/fullchain.pem
-      - KEY_FILE=/certs/privkey.pem
       - GO_ENV=production
       - DOMAIN=swarmhub.integralize.ru
     volumes:
-      - ./certs:/certs:ro
       - ./static:/root/static:ro
+      - ./templates:/root/templates:ro
       - ./logs:/var/log/app
     restart: unless-stopped
+    working_dir: /root
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - swarmhub-network
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./certs:/etc/nginx/certs:ro
-      - ./nginx-logs:/var/log/nginx
-    depends_on:
-      - swarmhub-server
-    restart: unless-stopped
     networks:
       - swarmhub-network
 

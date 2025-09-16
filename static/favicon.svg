@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="64" height="64" viewBox="0 0 64 64"
+  role="img" aria-label="SwarmHub favicon" shape-rendering="geometricPrecision">
+  <title>SwarmHub favicon</title>
+  <defs>
+    <style>
+      :root {
+        /* Светлая тема — насыщённый изумрудный */
+        --accent: #22c55e;      /* emerald-500 */
+        --accent-soft: #22c55e;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          /* Тёмная тема — чуть светлее для контраста */
+          --accent: #34d399;    /* emerald-400 */
+          --accent-soft: #34d399;
+        }
+      }
+
+      .icon-stroke {
+        stroke: var(--accent);
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+      }
+      .node {
+        fill: var(--accent-soft);
+      }
+    </style>
+  </defs>
+
+  <!-- Центральный хаб -->
+  <circle class="node" cx="32" cy="32" r="5"/>
+
+  <!-- Гексагональная обвязка и рёбра связи -->
+  <g class="icon-stroke">
+    <!-- Гексагон -->
+    <path d="
+      M 50 32
+      L 41 16.412
+      L 23 16.412
+      L 14 32
+      L 23 47.588
+      L 41 47.588
+      Z
+    "/>
+
+    <!-- Спицы от центра к узлам -->
+    <line x1="32" y1="32" x2="50" y2="32"/>        <!-- 0° -->
+    <line x1="32" y1="32" x2="41" y2="16.412"/>     <!-- 60° -->
+    <line x1="32" y1="32" x2="23" y2="16.412"/>     <!-- 120° -->
+    <line x1="32" y1="32" x2="14" y2="32"/>         <!-- 180° -->
+    <line x1="32" y1="32" x2="23" y2="47.588"/>     <!-- 240° -->
+    <line x1="32" y1="32" x2="41" y2="47.588"/>     <!-- 300° -->
+  </g>
+
+  <!-- Внешние узлы -->
+  <circle class="node" cx="50" cy="32" r="4"/>
+  <circle class="node" cx="41" cy="16.412" r="4"/>
+  <circle class="node" cx="23" cy="16.412" r="4"/>
+  <circle class="node" cx="14" cy="32" r="4"/>
+  <circle class="node" cx="23" cy="47.588" r="4"/>
+  <circle class="node" cx="41" cy="47.588" r="4"/>
+</svg>

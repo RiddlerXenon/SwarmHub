@@ -2,12 +2,11 @@
 FROM golang:1.24-alpine AS builder
 
 # Устанавливаем необходимые пакеты
-RUN apk add --no-cache git ca-certificates tzdata
+RUN apk add --no-cache git wget
 
-# Создаем рабочую директорию
 WORKDIR /app
 
-# Копируем go.mod и go.sum
+# Копируем go mod и sum файлы
 COPY go.mod go.sum ./
 
 # Загружаем зависимости
@@ -17,24 +16,25 @@ RUN go mod download
 COPY . .
 
 # Собираем приложение
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server ./cmd/SwarmHub
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/SwarmHub
 
 # Финальный образ
 FROM alpine:latest
 
-# Устанавливаем ca-certificates для HTTPS
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates wget
 
 WORKDIR /root/
 
-# Копируем бинарный файл из builder
-COPY --from=builder /app/server .
+# Копируем бинарник
+COPY --from=builder /app/main .
 
-# Создаем директории
-RUN mkdir -p static certs
+# Копируем статические файлы и шаблоны
+COPY --from=builder /app/static ./static
+COPY --from=builder /app/templates ./templates
 
-# Открываем порты
-EXPOSE 8080 8443
+# Создаем директорию для логов
+RUN mkdir -p /var/log/app
 
-# Запускаем приложение
-CMD ["./server"]
+EXPOSE 8080
+
+CMD ["./main"]
