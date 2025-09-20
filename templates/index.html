@@ -6,6 +6,7 @@
   <link rel="icon" href="../static/favicon.svg" type="image/x-icon">
   <link rel="shortcut icon" href="../static/favicon.svg" type="image/x-icon">
   <link rel="stylesheet" href="../static/css/styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     /* Стили для заголовка и описания проекта */
     .project-header {
@@ -100,23 +101,6 @@
       border-top: 1px solid #333;
     }
 
-    /* Адаптивность */
-    @media (max-width: 768px) {
-      .project-title {
-        font-size: 36px;
-      }
-      
-      .project-info {
-        flex-direction: column;
-        gap: 15px;
-      }
-      
-      .divider {
-        width: 100%;
-        height: 1px;
-      }
-    }
-
     .card canvas {
       transition: opacity 0.3s ease;
     }
@@ -127,37 +111,6 @@
     
     .card canvas:not(:hover) {
       opacity: 0.8;
-    }
-
-    .card .desc {
-      display: flex;
-      flex-direction: column;
-      padding: 10px;
-      font-size: 13px;
-      line-height: 1.4;
-      overflow: visible;
-      word-wrap: break-word;
-    }
-
-    .card .desc .title {
-      text-align: center;
-      font-weight: bold;
-      font-size: 18px;
-      color: #3ddc84;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding-top: 40px;
-    }
-
-    .card .desc .description {
-      text-align: justify;
-      color: #cccccc;
-      display: flex;
-      align-items: center;
-      font-size: 16px;
-      padding: 30px;
-      padding-top: 20px;
     }
   </style>
 </head>
@@ -198,7 +151,7 @@
       <canvas id="previewBoids" onclick="openModal('./boids.html')"></canvas>
       <div class="desc" onclick="openModal('./descriptions/boids.html')">
         <div class="title">Boids Simulation</div>
-        <div class="description">Симуляция стаи птиц. Каждая частица следует трем простым правилам: держись вместе со стаей, избегай столкновений с соседями, двигайся в том же направлении что и остальные. Простые локальные правила создают сложное глобальное поведение стаи.</div>
+        <div class="description">Симуляция стаи птиц. Каждая частица следует трем простым правилам: держись вместе со стаей, избегай столкновений и двигайся в том же направлении, что и соседи. Эти простые локальные взаимодействия приводят к сложному групповому поведению.</div>
       </div>
     </div>
 
@@ -207,7 +160,7 @@
       <canvas id="previewAnts" onclick="openModal('./aco.html')"></canvas>
       <div class="desc" onclick="openModal('./descriptions/aco.html')">
         <div class="title">Ant Colony Optimization</div>
-        <div class="description">Муравьи ищут кратчайший путь между стартовой и конечной точками. Каждый муравей оставляет феромонный след на своем маршруте. Чем короче путь, тем больше муравьев его используют и тем сильнее становится феромонный след, привлекающий других муравьев.</div>
+        <div class="description">Муравьи ищут кратчайший путь между стартовой и конечной точками. Каждый муравей оставляет феромоновый след, который испаряется со временем. Более короткие пути укрепляются, поскольку муравьи проходят их чаще.</div>
       </div>
     </div>
 
@@ -216,7 +169,7 @@
       <canvas id="previewSDS" onclick="openModal('./sds.html')"></canvas>
       <div class="desc" onclick="openModal('./descriptions/sds.html')">
         <div class="title">Stochastic Diffusion Search</div>
-        <div class="description">Агенты случайно блуждают по пространству поиска в попытке найти максимум целевой функции. Успешные агенты, нашедшие хорошие решения, привлекают к себе других агентов. Неудачные агенты перезапускаются в случайных местах и начинают поиск заново.</div>
+        <div class="description">Агенты случайно блуждают по пространству поиска в попытке найти максимум целевой функции. Агенты делятся информацией о найденных хороших решениях, создавая области концентрации вокруг оптимумов.</div>
       </div>
     </div>
 
@@ -225,7 +178,7 @@
       <canvas id="previewVicsek" onclick="openModal('./vicsek.html')"></canvas>
       <div class="desc" onclick="openModal('./descriptions/vicsek.html')">
         <div class="title">Vicsek Model</div>
-        <div class="description">Частицы движутся с постоянной скоростью и на каждом шаге поворачивают в среднем направлении своих ближайших соседей, плюс добавляется случайный шум. При малом уровне шума возникает коллективное упорядоченное движение всей группы частиц.</div>
+        <div class="description">Частицы движутся с постоянной скоростью и на каждом шаге поворачивают в среднем направлении движения соседей с добавлением случайного шума. Модель демонстрирует фазовый переход к упорядоченному движению.</div>
       </div>
     </div>
 
@@ -247,6 +200,9 @@
       const overlay = document.getElementById("overlay");
       const frame = document.getElementById("modalFrame");
 
+      // Предотвращаем скролл фона
+      document.body.classList.add('modal-open');
+
       overlay.classList.add("active");
 
       frame.onload = () => {
@@ -263,9 +219,26 @@
     }
 
     function closeModal() {
+      // Восстанавливаем скролл фона
+      document.body.classList.remove('modal-open');
+      
       document.getElementById("modalFrame").src = "";
       document.getElementById("overlay").classList.remove("active");
     }
+
+    // Обработка нажатия Escape для закрытия модального окна
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        closeModal();
+      }
+    });
+
+    // Обработка клика по overlay для закрытия модального окна
+    document.getElementById("overlay").addEventListener('click', function(event) {
+      if (event.target === this) {
+        closeModal();
+      }
+    });
   </script>
 
   <script type="module">
