@@ -414,7 +414,7 @@ canvas {
   padding: 0;
 }
 
-/* Мобильная адаптивность для панели управления - выравнивание с кнопкой закрытия и повышение z-index */
+/* Мобильная адаптивность для панели управления */
 @media (max-width: 770px) {
   #controlPanel {
     top: 20px;
@@ -1025,35 +1025,22 @@ table, th, td {
   margin-bottom: 20px;
 }
 
-@media (min-width: 1024px) {
-  .swarm-blocks-grid-3 {
-    grid-template-columns: 1fr;
-  }
-}
-
 .swarm-blocks-layout {
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;
 }
 
-@media (min-width: 1280px) {
-  .swarm-blocks-layout {
-    grid-template-columns: 300px 1fr;
-    gap: 20px;
-  }
+.swarm-blocks-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
-  .swarm-blocks-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .swarm-blocks-main {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
+.swarm-blocks-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .swarm-blocks-card {
@@ -1240,6 +1227,7 @@ table, th, td {
   align-items: center;
   margin-bottom: 15px;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .swarm-blocks-btn {
@@ -1320,6 +1308,7 @@ table, th, td {
   border: 1px solid #333;
   display: block;
   margin-bottom: 15px;
+  max-height: 600px;
 }
 
 .swarm-blocks-stats {
@@ -1328,7 +1317,13 @@ table, th, td {
   gap: 10px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .swarm-blocks-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
   .swarm-blocks-stats {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1525,19 +1520,7 @@ table, th, td {
     height: 55px;
     font-size: 22px;
   }
-}
 
-@media (max-width: 480px) {
-  .floating-button {
-    bottom: 15px;
-    right: 15px;
-    width: 50px;
-    height: 50px;
-    font-size: 20px;
-  }
-}
-
-@media (max-width: 768px) {
   .swarm-blocks-grid-3 {
     gap: 15px;
     padding: 10px;
@@ -1558,11 +1541,28 @@ table, th, td {
   .swarm-blocks-subtitle {
     font-size: 16px;
   }
+
+  .swarm-blocks-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .swarm-blocks-btn {
+    justify-content: center;
+  }
 }
 
 @media (max-width: 480px) {
   .swarm-blocks-container {
     padding: 10px;
+  }
+
+  .floating-button {
+    bottom: 15px;
+    right: 15px;
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
   }
 
   .swarm-blocks-grid-3 {
@@ -1583,5 +1583,23 @@ table, th, td {
 
   .swarm-blocks-stats {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .swarm-blocks-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .swarm-blocks-btn {
+    justify-content: center;
+    padding: 10px;
+  }
+
+  .swarm-blocks-h2 {
+    font-size: 18px;
+  }
+
+  .swarm-blocks-card {
+    padding: 15px;
   }
 }
