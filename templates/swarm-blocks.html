@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SwarmHub: Прикладные Задачи</title>
+  <link rel="icon" href="../static/favicon.svg" type="image/x-icon">
+  <link rel="stylesheet" href="../static/css/styles.css">
+  <style>
+    .swarm-blocks-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (min-width: 1024px) {
+      .swarm-blocks-grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .swarm-blocks-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 1280px) {
+      .swarm-blocks-layout {
+        grid-template-columns: 300px 1fr;
+        gap: 1.5rem;
+      }
+
+      .swarm-blocks-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .swarm-blocks-main {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body class="swarm-blocks-container">
+  <div class="swarm-blocks-max-w">
+    <header class="swarm-blocks-header">
+      <h1 class="swarm-blocks-h1">SwarmHub: Прикладные Задачи</h1>
+      <p class="swarm-blocks-subtitle">Решайте реальные проблемы с помощью роевого интеллекта</p>
+    </header>
+
+    <div class="swarm-blocks-grid-3">
+      <!-- Выбор задачи -->
+      <div class="swarm-blocks-card swarm-blocks-span-full">
+        <h2 class="swarm-blocks-h2">Выберите прикладную задачу</h2>
+        <div class="swarm-blocks-task-grid" id="taskGrid"></div>
+      </div>
+    </div>
+
+    <!-- Основной контейнер с боковой панелью и главным содержимым -->
+    <div class="swarm-blocks-layout">
+      <!-- Левая боковая панель -->
+      <div class="swarm-blocks-sidebar">
+        <!-- Блоки правил -->
+        <div class="swarm-blocks-card">
+          <h2 class="swarm-blocks-h2">Блоки алгоритмов</h2>
+          <div class="swarm-blocks-list" id="blocksList"></div>
+        </div>
+
+        <!-- Активные правила -->
+        <div class="swarm-blocks-card">
+          <h2 class="swarm-blocks-h2">Программа (<span id="ruleCount">0</span>)</h2>
+          <div class="swarm-blocks-list" id="rulesList"></div>
+          <div class="swarm-blocks-hint" id="hint">💡 Подсказка загружается...</div>
+        </div>
+      </div>
+
+      <!-- Главное содержимое -->
+      <div class="swarm-blocks-main">
+        <!-- Симуляция -->
+        <div class="swarm-blocks-card">
+          <div class="swarm-blocks-controls">
+            <h2 class="swarm-blocks-h2">Симуляция</h2>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="swarm-blocks-btn swarm-blocks-btn-play" id="playBtn" style="display:flex;">
+                ▶ Старт
+              </button>
+              <button class="swarm-blocks-btn swarm-blocks-btn-pause" id="pauseBtn" style="display:none;">
+                ⏸ Пауза
+              </button>
+              <button class="swarm-blocks-btn swarm-blocks-btn-reset" id="resetBtn">
+                ↻ Сброс
+              </button>
+            </div>
+          </div>
+
+          <div id="successMsg" class="swarm-blocks-success" style="display:none;">
+            <span style="color: #22c55e; font-size: 1.5rem;">✓</span>
+            <div class="swarm-blocks-success-content">
+              <div class="swarm-blocks-success-title">Задача выполнена!</div>
+              <div class="swarm-blocks-success-subtitle" id="successStats">Эффективность: 0.0 • Время: 0с</div>
+            </div>
+          </div>
+
+          <canvas id="simCanvas" class="swarm-blocks-canvas" width="800" height="600"></canvas>
+
+          <div class="swarm-blocks-stats">
+            <div class="swarm-blocks-stat-box">
+              <div class="swarm-blocks-stat-label">Агенты</div>
+              <div class="swarm-blocks-stat-value" id="agentCount">0</div>
+            </div>
+            <div class="swarm-blocks-stat-box">
+              <div class="swarm-blocks-stat-label">Выполнено</div>
+              <div class="swarm-blocks-stat-value"><span id="collectedCount">0</span>/<span id="totalCount">0</span></div>
+            </div>
+            <div class="swarm-blocks-stat-box">
+              <div class="swarm-blocks-stat-label">Покрытие</div>
+              <div class="swarm-blocks-stat-value"><span id="coverageValue">0</span>%</div>
+            </div>
+            <div class="swarm-blocks-stat-box">
+              <div class="swarm-blocks-stat-label">Время</div>
+              <div class="swarm-blocks-stat-value"><span id="timeValue">0</span>с</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Методические материалы -->
+    <div class="swarm-blocks-methodology">
+      <div class="swarm-blocks-info-box blue">
+        <h3>🎯 Цели обучения</h3>
+        <ul>
+          <li>• Понимание алгоритмического мышления</li>
+          <li>• Основы многоагентных систем</li>
+          <li>• Применение роевого интеллекта</li>
+          <li>• Решение оптимизационных задач</li>
+          <li>• Координация распределённых систем</li>
+        </ul>
+      </div>
+
+      <div class="swarm-blocks-info-box purple">
+        <h3>🎓 Межпредметные связи</h3>
+        <div style="font-size: 0.875rem; color: #cbd5e1;">
+          <div style="margin-bottom: 0.25rem;"><strong>Информатика:</strong> алгоритмы, ИИ, оптимизация</div>
+          <div style="margin-bottom: 0.25rem;"><strong>Математика:</strong> векторы, расстояния, функции</div>
+          <div style="margin-bottom: 0.25rem;"><strong>Физика:</strong> движение, силы, траектории</div>
+          <div style="margin-bottom: 0.25rem;"><strong>Биология:</strong> поведение стай, роёв</div>
+          <div style="margin-bottom: 0.25rem;"><strong>ОБЖ:</strong> спасательные операции</div>
+          <div style="margin-bottom: 0.25rem;"><strong>Экология:</strong> мониторинг, очистка</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Легенда -->
+    <h3 class="swarm-blocks-h3">🗺️ Легенда карты</h3>
+    <div class="swarm-blocks-legend">
+      <div class="swarm-blocks-legend-item">
+        <div class="swarm-blocks-legend-color" style="background: rgba(34, 197, 94, 0.3); border: 2px solid #22c55e;"></div>
+        <span>База / Старт</span>
+      </div>
+      <div class="swarm-blocks-legend-item">
+        <div class="swarm-blocks-legend-color swarm-blocks-legend-circle" style="background: #ef4444;"></div>
+        <span>Критические цели</span>
+      </div>
+      <div class="swarm-blocks-legend-item">
+        <div class="swarm-blocks-legend-color" style="background: rgba(100, 100, 100, 0.4);"></div>
+        <span>Препятствия</span>
+      </div>
+      <div class="swarm-blocks-legend-item">
+        <div class="swarm-blocks-legend-color swarm-blocks-legend-circle" style="background: linear-gradient(to right, #06b6d4, #c084fc);"></div>
+        <span>Агенты роя</span>
+      </div>
+    </div>
+
+    <!-- Вызовы и достижения -->
+    <h3 class="swarm-blocks-h3">🏆 Испытания</h3>
+    <div class="swarm-blocks-challenges">
+      <div class="swarm-blocks-challenge-box">
+        <div class="swarm-blocks-challenge-title">⭐ Новичок</div>
+        <div class="swarm-blocks-challenge-desc">Решить задачу любым способом</div>
+      </div>
+      <div class="swarm-blocks-challenge-box">
+        <div class="swarm-blocks-challenge-title">⭐⭐ Эксперт</div>
+        <div class="swarm-blocks-challenge-desc">Эффективность > 5.0</div>
+      </div>
+      <div class="swarm-blocks-challenge-box">
+        <div class="swarm-blocks-challenge-title">⭐⭐⭐ Мастер</div>
+        <div class="swarm-blocks-challenge-desc">Минимум блоков, максимум скорости</div>
+      </div>
+    </div>
+
+    <div class="swarm-blocks-footer">
+      SwarmHub © 2025 | Курский государственный университет | Исследование роевого интеллекта
+    </div>
+  </div>
+
+  <script>
+    // Данные о задачах
+    const tasks = {
+      forest_fire: {
+        name: '🔥 Тушение лесного пожара',
+        description: 'Дроны-пожарные должны обнаружить и потушить все очаги возгорания',
+        subject: 'ОБЖ / Экология',
+        initialAgents: 6,
+        agentType: 'drone',
+        setupTargets: () => {
+          return Array.from({ length: 12 }, () => ({
+            x: Math.random() * 700 + 50,
+            y: Math.random() * 500 + 50,
+            type: 'fire',
+            intensity: Math.random() * 50 + 50,
+            extinguished: false
+          }));
+        },
+        setupObstacles: () => {
+          return Array.from({ length: 8 }, () => ({
+            x: Math.random() * 700 + 50,
+            y: Math.random() * 500 + 50,
+            radius: 20
+          }));
+        },
+        successCondition: (stats, targets) => {
+          const extinguished = targets.filter(t => t.extinguished).length;
+          return extinguished === targets.length;
+        },
+        hint: 'Используйте "Найти ближайшую цель" и "Избегать препятствий"'
+      },
+
+      search_rescue: {
+        name: '🚁 Поисково-спасательная операция',
+        description: 'Вертолёты ищут пострадавших в труднодоступной местности',
+        subject: 'ОБЖ / География',
+        initialAgents: 8,
+        agentType: 'helicopter',
+        setupTargets: () => {
+          return Array.from({ length: 10 }, () => ({
+            x: Math.random() * 700 + 50,
+            y: Math.random() * 500 + 50,
+            type: 'person',
+            rescued: false,
+            urgent: Math.random() > 0.7
+          }));
+        },
+        setupObstacles: () => {
+          return Array.from({ length: 15 }, () => ({
+            x: Math.random() * 700 + 50,
+            y: Math.random() * 500 + 50,
+            radius: 15
+          }));
+        },
+        successCondition: (stats, targets) => {
+          const rescued = targets.filter(t => t.rescued).length;
+          return rescued === targets.length;
+        },
+        hint: 'Координируйте действия: "Держаться вместе" + "Избегать других" для покрытия большей площади'
+      },
+
+      warehouse: {
+        name: '📦 Автоматизация склада',
+        description: 'Роботы-грузчики собирают и сортируют товары на складе',
+        subject: 'Информатика / Логистика',
+        initialAgents: 10,
+        agentType: 'robot',
+        setupTargets: () => {
+          return Array.from({ length: 20 }, () => ({
+            x: Math.random() * 700 + 50,
+            y: Math.random() * 500 + 50,
+            type: 'box',
+            collected: false,
+            priority: Math.floor(Math.random() * 3)
+          }));
+        },
+        setupObstacles: () => {
+          const obstacles = [];
+          for (let i = 0; i < 5; i++) {
+            for (let j = 0; j < 3; j++) {
+              obstacles.push({
+                x: 150 + i * 130,
+                y: 100 + j * 180,
+                radius: 25,
+                width: 80,
+                height: 40
+              });
+            }
+          }
+          return obstacles;
+        },
+        successCondition: (stats, targets) => {
+          const collected = targets.filter(t => t.collected).length;
+          return collected === targets.length;
+        },
+        hint: 'Оптимизируйте маршруты: избегайте столкновений и повторного посещения зон'
+      },
+
+      ocean_cleanup: {
+        name: '🌊 Очистка океана от мусора',
+        description: 'Автономные катера собирают пластиковый мусор в океане',
+        subject: 'Экология / Химия',
+        initialAgents: 7,
+        agentType: 'boat',
+        setupTargets: () => {
+          return Array.from({ length: 25 }, () => ({
+            x: Math.random() * 700 + 50,
+            y: Math.random() * 500 + 50,
+            type: 'trash',
+            size: Math.random() * 3 + 1,
+            collected: false
+          }));
+        },
+        setupObstacles: () => {
+          return Array.from({ length: 5 }, () => ({
+            x: Math.random() * 800,
+            y: Math.random() * 600,
+            radius: 30,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5
+          }));
+        },
+        successCondition: (stats, targets) => {
+          const collected = targets.filter(t => t.collected).length;
+          return collected >= targets.length * 0.9;
+        },
+        hint: 'Мусор дрейфует! Используйте "Предсказывать движение" для эффективного сбора'
+      },
+
+      crop_monitoring: {
+        name: '🌾 Мониторинг сельхозугодий',
+        description: 'Дроны сканируют поля, выявляя заболевания растений',
+        subject: 'Биология / Сельское хозяйство',
+        initialAgents: 5,
+        agentType: 'agro_drone',
+        setupTargets: () => {
+          return Array.from({ length: 15 }, () => ({
+            x: Math.random() * 700 + 50,
+            y: Math.random() * 500 + 50,
+            type: 'sick_crop',
+            scanned: false,
+            severity: Math.random()
+          }));
+        },
+        setupObstacles: () => [],
+        successCondition: (stats, targets) => {
+          const scanned = targets.filter(t => t.scanned).length;
+          return scanned === targets.length && stats.coverage > 85;
+        },
+        hint: 'Равномерное покрытие важнее скорости. Используйте "Сеточное сканирование"'
+      },
+
+      traffic_control: {
+        name: '🚦 Управление дорожным движением',
+        description: 'Беспилотники координируют движение транспорта на перекрёстках',
+        subject: 'Физика / ОБЖ',
+        initialAgents: 12,
+        agentType: 'car',
+        setupTargets: () => {
+          return Array.from({ length: 12 }, (_, i) => ({
+            x: i < 6 ? 100 : 700,
+            y: 100 + (i % 6) * 80,
+            type: 'destination',
+            reached: false,
+            agentId: i
+          }));
+        },
+        setupObstacles: () => {
+          return [
+            { x: 300, y: 300, radius: 50, type: 'intersection' },
+            { x: 500, y: 300, radius: 50, type: 'intersection' }
+          ];
+        },
+        successCondition: (stats, targets) => {
+          return targets.filter(t => t.reached).length === targets.length;
+        },
+        hint: 'Избегайте пробок: "Держать дистанцию" + "Объезжать скопления"'
+      }
+    };
+
+    const blockTypes = [
+      { id: 'find_nearest_target', name: 'Найти ближайшую цель', color: 'bg-red-500', category: 'action', icon: '🎯' },
+      { id: 'avoid_obstacles', name: 'Избегать препятствий', color: 'bg-orange-500', category: 'safety', icon: '⚠️' },
+      { id: 'avoid_others', name: 'Избегать других агентов', color: 'bg-orange-600', category: 'safety', icon: '⇋' },
+      { id: 'stay_together', name: 'Держаться вместе', color: 'bg-teal-500', category: 'coordination', icon: '◉' },
+      { id: 'spread_out', name: 'Распределиться равномерно', color: 'bg-teal-600', category: 'coordination', icon: '⊕' },
+      { id: 'grid_scan', name: 'Сеточное сканирование', color: 'bg-blue-500', category: 'movement', icon: '▦' },
+      { id: 'spiral_search', name: 'Спиральный поиск', color: 'bg-blue-600', category: 'movement', icon: '🌀' },
+      { id: 'priority_target', name: 'Приоритет срочности', color: 'bg-purple-500', category: 'logic', icon: '⚡' },
+      { id: 'return_to_base', name: 'Вернуться на базу', color: 'bg-green-500', category: 'action', icon: '🏠' }
+    ];
+
+    // Состояние симуляции
+    let state = {
+      isRunning: false,
+      selectedTask: 'forest_fire',
+      agents: [],
+      rules: [],
+      targets: [],
+      obstacles: [],
+      stats: { collected: 0, time: 0, coverage: 0, efficiency: 0, rescued: 0, extinguished: 0 },
+      animationRef: null
+    };
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Инициализация интерфейса
+    function initUI() {
+      renderTaskGrid();
+      renderBlocksList();
+      updateRulesList();
+      initializeSimulation();
+    }
+
+    function renderTaskGrid() {
+      const grid = document.getElementById('taskGrid');
+      grid.innerHTML = '';
+      Object.entries(tasks).forEach(([key, task]) => {
+        const btn = document.createElement('button');
+        btn.className = 'swarm-blocks-task-btn' + (state.selectedTask === key ? ' active' : '');
+        btn.innerHTML = `
+          <div class="swarm-blocks-task-name">${task.name}</div>
+          <div class="swarm-blocks-task-subject">${task.subject}</div>
+          <div class="swarm-blocks-task-desc">${task.description}</div>
+        `;
+        btn.onclick = () => {
+          state.selectedTask = key;
+          state.isRunning = false;
+          initializeSimulation();
+          renderTaskGrid();
+          updateControlButtons();
+          draw();
+        };
+        grid.appendChild(btn);
+      });
+    }
+
+    function renderBlocksList() {
+      const list = document.getElementById('blocksList');
+      list.innerHTML = '';
+      blockTypes.forEach(block => {
+        const btn = document.createElement('button');
+        btn.className = `swarm-blocks-block-btn ${block.color}`;
+        btn.innerHTML = `
+          <span class="swarm-blocks-icon">${block.icon}</span>
+          <span class="swarm-blocks-name">${block.name}</span>
+          <span class="swarm-blocks-plus">+</span>
+        `;
+        btn.onclick = () => addRule(block.id);
+        list.appendChild(btn);
+      });
+    }
+
+    function addRule(blockId) {
+      state.rules.push({ id: Date.now(), type: blockId, priority: state.rules.length });
+      updateRulesList();
+    }
+
+    function removeRule(ruleId) {
+      state.rules = state.rules.filter(r => r.id !== ruleId);
+      updateRulesList();
+    }
+
+    function updateRulesList() {
+      const list = document.getElementById('rulesList');
+      document.getElementById('ruleCount').textContent = state.rules.length;
+
+      if (state.rules.length === 0) {
+        list.innerHTML = '<div class="swarm-blocks-empty"><div class="swarm-blocks-empty-icon">⚠️</div><p>Составьте программу из блоков</p></div>';
+      } else {
+        list.innerHTML = '';
+        state.rules.forEach((rule, idx) => {
+          const block = blockTypes.find(b => b.id === rule.type);
+          const div = document.createElement('div');
+          div.className = `swarm-blocks-rule-item ${block.color}`;
+          div.innerHTML = `
+            <div class="swarm-blocks-rule-content">
+              <span class="swarm-blocks-icon">${block.icon}</span>
+              <span class="swarm-blocks-rule-text">${idx + 1}. ${block.name}</span>
+            </div>
+            <button class="swarm-blocks-delete-btn">✕</button>
+          `;
+          div.querySelector('.swarm-blocks-delete-btn').onclick = () => removeRule(rule.id);
+          list.appendChild(div);
+        });
+      }
+
+      const task = tasks[state.selectedTask];
+      document.getElementById('hint').innerHTML = `💡 ${task.hint}`;
+    }
+
+    function initializeSimulation() {
+      const task = tasks[state.selectedTask];
+      state.agents = Array.from({ length: task.initialAgents }, (_, i) => ({
+        id: i,
+        x: 100 + (i % 4) * 30,
+        y: 100 + Math.floor(i / 4) * 30,
+        vx: 0,
+        vy: 0,
+        color: `hsl(${(i * 360) / task.initialAgents}, 70%, 60%)`,
+        hasTarget: false,
+        targetId: null
+      }));
+      state.obstacles = task.setupObstacles();
+      state.targets = task.setupTargets();
+      state.stats = { collected: 0, time: 0, coverage: 0, efficiency: 0, rescued: 0, extinguished: 0 };
+
+      updateStats();
+      draw();
+    }
+
+    function applyRules(agent) {
+      let dx = 0, dy = 0;
+
+      state.rules.forEach(rule => {
+        switch (rule.type) {
+          case 'find_nearest_target': {
+            const available = state.targets.filter(t => !t.collected && !t.rescued && !t.extinguished && !t.scanned && !t.reached);
+            if (available.length > 0) {
+              let closest = available[0];
+              let minDist = Math.hypot(closest.x - agent.x, closest.y - agent.y);
+              available.forEach(t => {
+                const dist = Math.hypot(t.x - agent.x, t.y - agent.y);
+                if (dist < minDist) {
+                  minDist = dist;
+                  closest = t;
+                }
+              });
+              dx += (closest.x - agent.x) * 0.004;
+              dy += (closest.y - agent.y) * 0.004;
+            }
+            break;
+          }
+
+          case 'avoid_obstacles': {
+            state.obstacles.forEach(obs => {
+              const dist = Math.hypot(obs.x - agent.x, obs.y - agent.y);
+              const safeDistance = (obs.radius || 20) + 30;
+              if (dist < safeDistance && dist > 0) {
+                const force = (safeDistance - dist) / safeDistance;
+                dx -= (obs.x - agent.x) / dist * force * 0.5;
+                dy -= (obs.y - agent.y) / dist * force * 0.5;
+              }
+            });
+            break;
+          }
+
+          case 'avoid_others': {
+            state.agents.forEach(other => {
+              if (other.id !== agent.id) {
+                const dist = Math.hypot(other.x - agent.x, other.y - agent.y);
+                if (dist < 40 && dist > 0) {
+                  dx -= (other.x - agent.x) / dist * 0.3;
+                  dy -= (other.y - agent.y) / dist * 0.3;
+                }
+              }
+            });
+            break;
+          }
+
+          case 'stay_together': {
+            const avgX = state.agents.reduce((s, a) => s + a.x, 0) / state.agents.length;
+            const avgY = state.agents.reduce((s, a) => s + a.y, 0) / state.agents.length;
+            dx += (avgX - agent.x) * 0.001;
+            dy += (avgY - agent.y) * 0.001;
+            break;
+          }
+
+          case 'spread_out': {
+            state.agents.forEach(other => {
+              if (other.id !== agent.id) {
+                const dist = Math.hypot(other.x - agent.x, other.y - agent.y);
+                const idealDist = 100;
+                if (dist < idealDist && dist > 0) {
+                  dx -= (other.x - agent.x) / dist * 0.2;
+                  dy -= (other.y - agent.y) / dist * 0.2;
+                }
+              }
+            });
+            break;
+          }
+
+          case 'grid_scan': {
+            const gridSize = 80;
+            const gridX = Math.floor(agent.x / gridSize) * gridSize + gridSize / 2;
+            const gridY = Math.floor(agent.y / gridSize) * gridSize + gridSize / 2;
+            const nextGridX = gridX + gridSize;
+            dx += (nextGridX - agent.x) * 0.002;
+            dy += (nextGridY - agent.y) * 0.002;
+            break;
+          }
+
+          case 'spiral_search': {
+            const centerX = 400;
+            const centerY = 300;
+            const angle = Math.atan2(agent.y - centerY, agent.x - centerX);
+            const radius = Math.hypot(agent.x - centerX, agent.y - centerY);
+            dx += Math.cos(angle + 0.1) * 0.3 + (centerX - agent.x) * 0.0001 * radius;
+            dy += Math.sin(angle + 0.1) * 0.3 + (centerY - agent.y) * 0.0001 * radius;
+            break;
+          }
+
+          case 'priority_target': {
+            const urgent = state.targets.filter(t => (t.urgent || t.priority === 0) && !t.collected && !t.rescued && !t.extinguished);
+            if (urgent.length > 0) {
+              const target = urgent[0];
+              dx += (target.x - agent.x) * 0.006;
+              dy += (target.y - agent.y) * 0.006;
+            }
+            break;
+          }
+
+          case 'return_to_base': {
+            const baseX = 100, baseY = 100;
+            const dist = Math.hypot(baseX - agent.x, baseY - agent.y);
+            if (dist > 50) {
+              dx += (baseX - agent.x) * 0.002;
+              dy += (baseY - agent.y) * 0.002;
+            }
+            break;
+          }
+        }
+      });
+
+      return { dx, dy };
+    }
+
+    function animate() {
+      if (!state.isRunning) return;
+
+      const task = tasks[state.selectedTask];
+
+      // Обновление движущихся препятствий
+      if (state.selectedTask === 'ocean_cleanup') {
+        state.obstacles.forEach(obs => {
+          if (obs.vx !== undefined) {
+            obs.x += obs.vx;
+            obs.y += obs.vy;
+            if (obs.x < 0 || obs.x > 800) obs.vx *= -1;
+            if (obs.y < 0 || obs.y > 600) obs.vy *= -1;
+          }
+        });
+      }
+
+      // Обновление агентов
+      state.agents = state.agents.map(agent => {
+        const { dx, dy } = applyRules(agent);
+        let newVx = agent.vx * 0.95 + dx;
+        let newVy = agent.vy * 0.95 + dy;
+
+        const speed = Math.hypot(newVx, newVy);
+        const maxSpeed = 3;
+        if (speed > maxSpeed) {
+          newVx = (newVx / speed) * maxSpeed;
+          newVy = (newVy / speed) * maxSpeed;
+        }
+
+        let newX = agent.x + newVx;
+        let newY = agent.y + newVy;
+
+        if (newX < 20 || newX > 780) newVx *= -0.8;
+        if (newY < 20 || newY > 580) newVy *= -0.8;
+
+        newX = Math.max(20, Math.min(780, newX));
+        newY = Math.max(20, Math.min(580, newY));
+
+        return { ...agent, x: newX, y: newY, vx: newVx, vy: newVy };
+      });
+
+      // Проверка достижения целей
+      let collected = 0;
+      state.targets.forEach(target => {
+        if (!target.collected && !target.rescued && !target.extinguished && !target.scanned && !target.reached) {
+          state.agents.forEach(agent => {
+            const dist = Math.hypot(target.x - agent.x, target.y - agent.y);
+            if (dist < 20) {
+              if (target.type === 'fire') {
+                target.intensity -= 10;
+                if (target.intensity <= 0) {
+                  target.extinguished = true;
+                  collected++;
+                }
+              } else if (target.type === 'person') {
+                target.rescued = true;
+                collected++;
+              } else if (target.type === 'box' || target.type === 'trash') {
+                target.collected = true;
+                collected++;
+              } else if (target.type === 'sick_crop') {
+                target.scanned = true;
+                collected++;
+              } else if (target.type === 'destination' && target.agentId === agent.id) {
+                target.reached = true;
+                collected++;
+              }
+            }
+          });
+        }
+      });
+
+      const coverage = Math.min(100, (state.stats.time / 10) + collected * 2);
+      const totalCompleted = state.targets.filter(t => t.collected || t.rescued || t.extinguished || t.scanned || t.reached).length;
+
+      state.stats.time += 1;
+      state.stats.collected = totalCompleted;
+      state.stats.coverage = coverage;
+      state.stats.efficiency = totalCompleted / (state.stats.time / 60 + 1) * 10;
+
+      updateStats();
+      draw();
+
+      state.animationRef = requestAnimationFrame(animate);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // База
+      ctx.fillStyle = 'rgba(0, 255, 0, 0.2)';
+      ctx.fillRect(70, 70, 80, 80);
+      ctx.strokeStyle = '#00ff00';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(70, 70, 80, 80);
+
+      // Препятствия
+      state.obstacles.forEach(obs => {
+        if (obs.width && obs.height) {
+          ctx.fillStyle = 'rgba(100, 100, 100, 0.5)';
+          ctx.fillRect(obs.x - obs.width / 2, obs.y - obs.height / 2, obs.width, obs.height);
+        } else {
+          ctx.fillStyle = obs.vx !== undefined ? 'rgba(50, 150, 200, 0.3)' : 'rgba(100, 100, 100, 0.4)';
+          ctx.beginPath();
+          ctx.arc(obs.x, obs.y, obs.radius || 20, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // Цели
+      state.targets.forEach(target => {
+        const completed = target.collected || target.rescued || target.extinguished || target.scanned || target.reached;
+
+        if (target.type === 'fire') {
+          ctx.fillStyle = target.extinguished ? 'rgba(100, 100, 100, 0.5)' : `rgba(255, ${255 - target.intensity * 2}, 0, 0.8)`;
+          ctx.beginPath();
+          ctx.arc(target.x, target.y, 12, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (target.type === 'person') {
+          ctx.fillStyle = target.rescued ? 'rgba(0, 255, 0, 0.5)' : (target.urgent ? '#ff0000' : '#ffff00');
+          ctx.beginPath();
+          ctx.arc(target.x, target.y, 8, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (target.type === 'box') {
+          if (!completed) {
+            ctx.fillStyle = target.priority === 0 ? '#ff6600' : target.priority === 1 ? '#ffaa00' : '#ffdd00';
+            ctx.fillRect(target.x - 6, target.y - 6, 12, 12);
+          }
+        } else if (target.type === 'trash') {
+          if (!completed) {
+            ctx.fillStyle = '#00aa00';
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, target.size * 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (target.type === 'sick_crop') {
+          ctx.fillStyle = target.scanned ? 'rgba(0, 255, 0, 0.3)' : 'rgba(139, 69, 19, 0.6)';
+          ctx.fillRect(target.x - 8, target.y - 8, 16, 16);
+        } else if (target.type === 'destination') {
+          ctx.fillStyle = target.reached ? 'rgba(0, 255, 0, 0.5)' : 'rgba(0, 100, 255, 0.5)';
+          ctx.beginPath();
+          ctx.arc(target.x, target.y, 15, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // Агенты
+      state.agents.forEach(agent => {
+        ctx.fillStyle = agent.color;
+        ctx.beginPath();
+        ctx.arc(agent.x, agent.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = agent.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(agent.x, agent.y);
+        ctx.lineTo(agent.x + agent.vx * 5, agent.y + agent.vy * 5);
+        ctx.stroke();
+      });
+    }
+
+    function updateStats() {
+      document.getElementById('agentCount').textContent = state.agents.length;
+      document.getElementById('collectedCount').textContent = state.stats.collected;
+      document.getElementById('totalCount').textContent = state.targets.length;
+      document.getElementById('coverageValue').textContent = Math.floor(state.stats.coverage);
+      document.getElementById('timeValue').textContent = Math.floor(state.stats.time / 60);
+
+      const task = tasks[state.selectedTask];
+      const isSuccess = task.successCondition(state.stats, state.targets);
+
+      const successMsg = document.getElementById('successMsg');
+      if (isSuccess && state.stats.time > 0) {
+        successMsg.style.display = 'flex';
+        document.getElementById('successStats').textContent = `Эффективность: ${state.stats.efficiency.toFixed(1)} • Время: ${Math.floor(state.stats.time / 60)}с`;
+      } else {
+        successMsg.style.display = 'none';
+      }
+    }
+
+    function updateControlButtons() {
+      const playBtn = document.getElementById('playBtn');
+      const pauseBtn = document.getElementById('pauseBtn');
+      if (state.isRunning) {
+        playBtn.style.display = 'none';
+        pauseBtn.style.display = 'flex';
+      } else {
+        playBtn.style.display = 'flex';
+        pauseBtn.style.display = 'none';
+      }
+    }
+
+    // Обработчики кнопок
+    document.getElementById('playBtn').addEventListener('click', () => {
+      state.isRunning = true;
+      updateControlButtons();
+      animate();
+    });
+
+    document.getElementById('pauseBtn').addEventListener('click', () => {
+      state.isRunning = false;
+      if (state.animationRef) cancelAnimationFrame(state.animationRef);
+      updateControlButtons();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      state.isRunning = false;
+      if (state.animationRef) cancelAnimationFrame(state.animationRef);
+      initializeSimulation();
+      updateControlButtons();
+    });
+
+    // Инициализация
+    initUI();
+  </script>
+</body>
+</html>
